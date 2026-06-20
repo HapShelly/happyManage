@@ -845,6 +845,11 @@
     <div class="nav-item" onclick="showPage('operasional', this)">
       <span class="nav-icon">💰</span> Biaya Operasional
     </div>
+
+    <div class="nav-label">Sistem</div>
+    <div class="nav-item" onclick="showPage('backup-restore', this)">
+      <span class="nav-icon">💾</span> Backup & Restore
+    </div>
   </div>
   <div class="sidebar-footer">
     ProManage v1.0 &nbsp;·&nbsp; © 2025
@@ -1225,6 +1230,7 @@
         <div class="page-header-actions">
           <button class="btn btn-outline" onclick="openModal('modal-roles')">⚙️ Kelola Role</button>
           <button class="btn btn-outline" onclick="exportRencanaPDF()">📄 Export PDF</button>
+          <button class="btn btn-outline" onclick="exportRencanaImage()" style="color:var(--steel)">🖼️ Export Image</button>
           <button class="btn btn-primary" onclick="openModal('modal-add-rencana')">＋ Tambah Rencana</button>
         </div>
       </div>
@@ -1372,6 +1378,95 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ════════════════════════════════ BACKUP & RESTORE ════════════════════════════════ -->
+    <div id="page-backup-restore" class="page">
+      <div class="page-header">
+        <div>
+          <h1>💾 Backup & Restore</h1>
+          <p>Export semua data ke file JSON atau import dari file backup sebelumnya</p>
+        </div>
+      </div>
+
+      <!-- INFO CARD -->
+      <div class="alert alert-warn" style="margin-bottom:24px">
+        <span class="alert-icon">⚠️</span>
+        <div>
+          <strong>Penting:</strong> Backup secara berkala untuk menghindari kehilangan data. File JSON menyimpan <strong>seluruh data termasuk foto bukti nota</strong> sehingga ukuran file bisa besar. Proses import akan <strong>menimpa semua data yang ada</strong> — pastikan Anda yakin sebelum melanjutkan.
+        </div>
+      </div>
+
+      <div class="grid-2" style="align-items:start">
+
+        <!-- EXPORT CARD -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📤 Export Backup</div>
+              <div class="card-subtitle">Unduh semua data sebagai file JSON</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="backup-stats" style="margin-bottom:20px"></div>
+            <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;font-size:13px;color:var(--text-muted);line-height:1.7">
+              <div>✅ Semua data PO & Tagihan</div>
+              <div>✅ Data APD, Stok, Rencana & Transaksi</div>
+              <div>✅ Data No. JCN</div>
+              <div>✅ Biaya Operasional + foto bukti nota</div>
+              <div>✅ Pengaturan & Role jabatan</div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:14px;padding:12px" onclick="exportBackup()">
+              📥 Download Backup JSON
+            </button>
+            <div style="margin-top:12px;font-size:12px;color:var(--text-muted);text-align:center" id="backup-last-export"></div>
+          </div>
+        </div>
+
+        <!-- IMPORT CARD -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📥 Import / Restore</div>
+              <div class="card-subtitle">Pulihkan data dari file backup JSON</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-danger" style="margin-bottom:16px">
+              <span class="alert-icon">🔴</span>
+              <div style="font-size:12.5px"><strong>Data saat ini akan ditimpa!</strong> Pastikan sudah melakukan backup terlebih dahulu sebelum import.</div>
+            </div>
+            <div class="file-input-wrap" id="restore-drop-zone" onclick="document.getElementById('restore-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--steel)'" ondragleave="this.style.borderColor=''" ondrop="handleRestoreDrop(event)">
+              <div class="file-input-icon">📂</div>
+              <div class="file-input-text">Klik untuk pilih file JSON<br><small>atau drag & drop file ke sini</small></div>
+              <input type="file" id="restore-file-input" accept="application/json,.json" onchange="handleRestoreFileSelect(event)">
+            </div>
+            <div id="restore-file-preview" style="display:none;margin-top:14px;padding:14px;background:var(--bg);border-radius:var(--radius-sm);border:1.5px solid var(--border)">
+              <div style="font-size:13px;font-weight:700;color:var(--text-strong);margin-bottom:8px" id="restore-file-name"></div>
+              <div id="restore-file-stats" style="font-size:12.5px;color:var(--text-muted);line-height:1.8"></div>
+              <div style="display:flex;gap:10px;margin-top:14px">
+                <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="cancelRestoreFile()">✕ Batal</button>
+                <button class="btn btn-danger" style="flex:1;justify-content:center" onclick="openModal('modal-confirm-restore')">🔄 Restore Sekarang</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIWAYAT BACKUP (localStorage) -->
+      <div class="card" style="margin-top:24px">
+        <div class="card-header">
+          <div class="card-title">📋 Catatan Backup Terakhir</div>
+        </div>
+        <div class="card-body" id="backup-history-content">
+          <div class="empty-state" style="padding:24px">
+            <div class="empty-state-icon" style="font-size:32px">📭</div>
+            <p>Belum ada riwayat export di perangkat ini.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div><!-- /content -->
@@ -2040,6 +2135,31 @@
   </div>
 </div>
 
+<!-- MODAL KONFIRMASI RESTORE -->
+<div class="modal-overlay" id="modal-confirm-restore">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">⚠️ Konfirmasi Restore Data</div>
+      <button class="btn-close" onclick="closeModal('modal-confirm-restore')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-danger" style="margin-bottom:16px">
+        <span class="alert-icon">🔴</span>
+        <div><strong>Tindakan ini tidak bisa dibatalkan!</strong> Semua data yang ada saat ini akan dihapus dan diganti dengan data dari file backup.</div>
+      </div>
+      <p style="font-size:13.5px;color:var(--text);margin-bottom:12px">File yang akan di-restore:</p>
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:var(--text-strong);font-weight:600;margin-bottom:4px" id="confirm-restore-filename">—</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px" id="confirm-restore-stats">—</div>
+      <p style="font-size:13px;color:var(--text-muted)">Ketik <strong style="color:var(--danger)">RESTORE</strong> untuk mengkonfirmasi:</p>
+      <input type="text" id="confirm-restore-input" placeholder="Ketik RESTORE di sini..." style="margin-top:8px;width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none" oninput="validateRestoreInput()" onfocus="this.style.borderColor='var(--steel)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm-restore');document.getElementById('confirm-restore-input').value=''">Batal</button>
+      <button class="btn btn-danger" id="btn-do-restore" onclick="doRestore()" disabled style="opacity:.5;cursor:not-allowed">🔄 Ya, Restore Sekarang</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 
@@ -2207,7 +2327,8 @@ const pageTitles = {
   'apd-terima': 'Terima Barang',
   'apd-keluar': 'Pengeluaran Barang',
   'jcn-master': 'Master Data No. JCN',
-  'operasional': 'Biaya Operasional'
+  'operasional': 'Biaya Operasional',
+  'backup-restore': 'Backup & Restore'
 };
 
 function showPage(id, el) {
@@ -2304,6 +2425,7 @@ function renderPage(id) {
   else if (id === 'apd-keluar') renderKeluar();
   else if (id === 'jcn-master') { populateJCNPoSelect(); renderJCN(); }
   else if (id === 'operasional') renderOperasional();
+  else if (id === 'backup-restore') renderBackupRestore();
 }
 
 // ════════════════ MODAL ════════════════
@@ -3243,7 +3365,284 @@ function exportRencanaPDF() {
   doc.save(`Rencana-Pembelian-APD-${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
-// ════════════════ TERIMA BARANG ════════════════
+// ════════════════ EXPORT IMAGE RENCANA ════════════════
+async function exportRencanaImage() {
+  if (!db.rencana.length) return showToast('Belum ada rencana pembelian untuk diexport!', 'warn');
+
+  showToast('Membuat gambar...', 'info', 2000);
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  // ── Warna tema ──
+  const C = {
+    bg:        isDark ? '#10172B' : '#F5F7FC',
+    card:      isDark ? '#1A2238' : '#FFFFFF',
+    header:    isDark ? '#0F1A30' : '#1B2B4B',
+    border:    isDark ? '#2A3550' : '#E4E8F0',
+    text:      isDark ? '#E7EBF5' : '#1A1F36',
+    textMuted: isDark ? '#9099AD' : '#6B7080',
+    textWhite: '#FFFFFF',
+    steel:     '#4A6FA5',
+    gold:      '#F0A500',
+    success:   '#2ECC71',
+    accent:    isDark ? '#18253F' : '#EEF3FB',
+    rowAlt:    isDark ? '#18253F' : '#FAFBFD',
+  };
+
+  const SCALE   = 2;         // retina
+  const W       = 900;       // lebar logical
+  const PAD     = 36;
+  const TITLE_H = 90;
+  const HEADER_ROW_H = 38;
+  const ROW_H   = 52;        // per baris APD (base – bisa bertambah sesuai breakdown)
+  const ROLE_LINE_H = 18;
+  const FOOTER_H = 60;
+  const CORNER  = 12;
+
+  // ── Hitung tinggi dinamis ──
+  const items = db.rencana;
+  let totalH = TITLE_H + HEADER_ROW_H + FOOTER_H + PAD * 2;
+  const rowHeights = items.map(r => {
+    const roleCount = Object.keys(r.breakdown || {}).length;
+    return Math.max(ROW_H, 20 + roleCount * ROLE_LINE_H + 12);
+  });
+  totalH += rowHeights.reduce((a, h) => a + h, 0);
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = W * SCALE;
+  canvas.height = totalH * SCALE;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(SCALE, SCALE);
+
+  // ── Helper ──
+  const roundRect = (x, y, w, h, r, fill, stroke) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    if (fill)   { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.2; ctx.stroke(); }
+  };
+
+  const text = (str, x, y, opts = {}) => {
+    ctx.save();
+    ctx.font = `${opts.weight||'normal'} ${opts.size||13}px Inter, system-ui, sans-serif`;
+    ctx.fillStyle = opts.color || C.text;
+    ctx.textAlign = opts.align || 'left';
+    ctx.textBaseline = opts.baseline || 'alphabetic';
+    if (opts.maxW) {
+      // wrap text
+      const words = String(str).split(' ');
+      let line = '';
+      let lineY = y;
+      for (const w of words) {
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width > opts.maxW && line) {
+          ctx.fillText(line, x, lineY);
+          line = w;
+          lineY += (opts.lineH || 16);
+        } else { line = test; }
+      }
+      ctx.fillText(line, x, lineY);
+    } else {
+      ctx.fillText(String(str ?? ''), x, y);
+    }
+    ctx.restore();
+  };
+
+  // ── Background ──
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, W, totalH);
+
+  // ── Card shell ──
+  roundRect(PAD / 2, PAD / 2, W - PAD, totalH - PAD, CORNER, C.card, C.border);
+
+  // ── Header block ──
+  roundRect(PAD / 2, PAD / 2, W - PAD, TITLE_H, CORNER, C.header);
+  // bottom corners square so it joins the card body
+  ctx.fillStyle = C.header;
+  ctx.fillRect(PAD / 2, PAD / 2 + TITLE_H - CORNER, W - PAD, CORNER);
+
+  // Icon + judul
+  const iconX = PAD + 6;
+  const iconY = PAD / 2 + 18;
+
+  // Shield badge
+  roundRect(iconX, iconY, 42, 42, 8, C.gold);
+  text('🦺', iconX + 21, iconY + 28, { size: 22, align: 'center' });
+
+  text('Rencana Pembelian APD', iconX + 54, iconY + 16, { size: 18, weight: '700', color: C.textWhite });
+  text('PT. USAHA YEKAPEPE  ·  ProManage System', iconX + 54, iconY + 36, { size: 11, color: 'rgba(255,255,255,0.55)' });
+
+  // Tanggal kanan
+  const nowStr = new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  text(nowStr, W - PAD - 6, iconY + 16, { size: 11, color: 'rgba(255,255,255,0.65)', align: 'right' });
+
+  // Badges ringkasan
+  const totalQty = items.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+  const badge = (label, val, bx, by, col) => {
+    roundRect(bx, by, 110, 24, 6, col + '22');
+    text(`${val}  ${label}`, bx + 8, by + 16, { size: 11, color: col, weight: '600' });
+  };
+  badge(`Item APD`, items.length, W - PAD - 240, iconY + 50, '#7DA0D4');
+  badge(`Total Qty`, totalQty,  W - PAD - 120, iconY + 50, C.gold);
+
+  // ── Table header row ──
+  let curY = PAD / 2 + TITLE_H;
+  ctx.fillStyle = C.accent;
+  ctx.fillRect(PAD / 2, curY, W - PAD, HEADER_ROW_H);
+  ctx.strokeStyle = C.border;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(PAD / 2, curY, W - PAD, HEADER_ROW_H);
+
+  const COL = {
+    no:    { x: PAD + 4,   w: 28 },
+    nama:  { x: PAD + 36,  w: 180 },
+    stok:  { x: PAD + 224, w: 80 },
+    breakdown: { x: PAD + 312, w: 310 },
+    qty:   { x: PAD + 630, w: 70 },
+    sat:   { x: PAD + 706, w: 60 },
+    cat:   { x: PAD + 772, w: W - PAD * 2 - 772 - 4 },
+  };
+
+  const colHeaders = [
+    ['No', COL.no.x + COL.no.w / 2, 'center'],
+    ['Nama APD', COL.nama.x, 'left'],
+    ['Stok', COL.stok.x, 'left'],
+    ['Breakdown per Role', COL.breakdown.x, 'left'],
+    ['Qty', COL.qty.x + COL.qty.w / 2, 'center'],
+    ['Satuan', COL.sat.x, 'left'],
+    ['Catatan', COL.cat.x, 'left'],
+  ];
+
+  colHeaders.forEach(([label, cx, align]) => {
+    text(label, cx, curY + 24, { size: 10, weight: '700', color: C.textMuted, align });
+  });
+
+  // separator lines between columns (header)
+  [COL.nama.x, COL.stok.x, COL.breakdown.x, COL.qty.x, COL.sat.x, COL.cat.x].forEach(lx => {
+    ctx.beginPath(); ctx.strokeStyle = C.border; ctx.lineWidth = 1;
+    ctx.moveTo(lx - 6, curY + 6); ctx.lineTo(lx - 6, curY + HEADER_ROW_H - 6);
+    ctx.stroke();
+  });
+
+  curY += HEADER_ROW_H;
+
+  // ── Data rows ──
+  for (let i = 0; i < items.length; i++) {
+    const r = items[i];
+    const rH = rowHeights[i];
+    const rowBg = i % 2 === 0 ? C.card : C.rowAlt;
+
+    ctx.fillStyle = rowBg;
+    ctx.fillRect(PAD / 2, curY, W - PAD, rH);
+    ctx.strokeStyle = C.border; ctx.lineWidth = 0.8;
+    ctx.strokeRect(PAD / 2, curY, W - PAD, rH);
+
+    const midY = curY + rH / 2;
+
+    // No
+    text(String(i + 1), COL.no.x + COL.no.w / 2, midY + 5, { size: 12, color: C.textMuted, align: 'center' });
+
+    // APD foto thumbnail
+    const apd = db.apd.find(a => a.id === r.apdId);
+    const thumbSize = Math.min(rH - 10, 38);
+    const thumbX = COL.nama.x;
+    const thumbY = curY + (rH - thumbSize) / 2;
+
+    if (apd && apd.foto) {
+      await new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.save();
+          roundRect(thumbX, thumbY, thumbSize, thumbSize, 6, null, null);
+          ctx.clip();
+          ctx.drawImage(img, thumbX, thumbY, thumbSize, thumbSize);
+          ctx.restore();
+          resolve();
+        };
+        img.onerror = resolve;
+        img.src = apd.foto;
+      });
+    } else {
+      roundRect(thumbX, thumbY, thumbSize, thumbSize, 6, C.accent, C.border);
+      text('🦺', thumbX + thumbSize / 2, thumbY + thumbSize / 2 + 7, { size: 16, align: 'center' });
+    }
+
+    // Nama APD
+    text(r.namaApd || '-', thumbX + thumbSize + 8, midY + 5, {
+      size: 13, weight: '600', color: C.text, maxW: COL.nama.w - thumbSize - 12
+    });
+
+    // Stok
+    const stokColor = (r.stokNow || 0) < 5 ? '#E05252' : (r.stokNow || 0) < 10 ? C.gold : C.success;
+    text(`${r.stokNow || 0}`, COL.stok.x, midY - 6, { size: 14, weight: '700', color: stokColor });
+    text(r.satuan || '', COL.stok.x, midY + 10, { size: 10, color: C.textMuted });
+
+    // Breakdown
+    const breakdown = Object.entries(r.breakdown || {});
+    if (breakdown.length) {
+      const lineStart = curY + 14;
+      breakdown.forEach(([role, qty], bi) => {
+        const ly = lineStart + bi * ROLE_LINE_H;
+        // dot
+        ctx.beginPath();
+        ctx.arc(COL.breakdown.x + 4, ly - 3, 3, 0, Math.PI * 2);
+        ctx.fillStyle = C.steel;
+        ctx.fill();
+        text(`${role}`, COL.breakdown.x + 12, ly, { size: 11, color: C.text });
+        text(`×${qty}`, COL.breakdown.x + COL.breakdown.w - 8, ly, { size: 11, color: C.steel, align: 'right', weight: '600' });
+      });
+    } else {
+      text('-', COL.breakdown.x, midY + 5, { size: 12, color: C.textMuted });
+    }
+
+    // Qty total — pill badge
+    const qtyStr = String(r.qty || 0);
+    const pillW = Math.max(40, ctx.measureText(qtyStr).width + 24);
+    const pillX = COL.qty.x + COL.qty.w / 2 - pillW / 2;
+    roundRect(pillX, midY - 13, pillW, 24, 8, C.steel + '22');
+    text(qtyStr, COL.qty.x + COL.qty.w / 2, midY + 5, { size: 14, weight: '800', color: C.steel, align: 'center' });
+
+    // Satuan
+    text(r.satuan || '-', COL.sat.x, midY + 5, { size: 12, color: C.textMuted });
+
+    // Catatan
+    if (r.catatan) {
+      text(r.catatan, COL.cat.x, midY + 5, { size: 11, color: C.textMuted, maxW: COL.cat.w, lineH: 14 });
+    } else {
+      text('-', COL.cat.x, midY + 5, { size: 12, color: C.border });
+    }
+
+    curY += rH;
+  }
+
+  // ── Footer / grand total ──
+  ctx.fillStyle = C.header;
+  ctx.fillRect(PAD / 2, curY, W - PAD, FOOTER_H);
+  // top corners square
+  ctx.fillStyle = C.header;
+  ctx.fillRect(PAD / 2, curY, W - PAD, CORNER);
+  // bottom rounded
+  roundRect(PAD / 2, curY + FOOTER_H - CORNER * 2, W - PAD, CORNER * 2, CORNER, C.header);
+
+  text('GRAND TOTAL', PAD + 54, curY + FOOTER_H / 2 + 6, { size: 13, weight: '700', color: 'rgba(255,255,255,0.7)' });
+  text(String(totalQty), COL.qty.x + COL.qty.w / 2, curY + FOOTER_H / 2 + 6, { size: 20, weight: '800', color: C.gold, align: 'center' });
+  text(`${items.length} item APD`, W - PAD - 10, curY + FOOTER_H / 2 + 6, { size: 12, color: 'rgba(255,255,255,0.5)', align: 'right' });
+
+  // ── Download ──
+  const filename = `Rencana-Pembelian-APD-${new Date().toISOString().split('T')[0]}.png`;
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Image berhasil diunduh: ${filename}`, 'success', 4000);
+  }, 'image/png');
+}
 function populateTerimaModal() {
   document.getElementById('trm-apd-id').innerHTML = db.apd.map(a => `<option value="${a.id}">${a.nama} (stok: ${a.stok})</option>`).join('');
   document.getElementById('trm-tgl').value = new Date().toISOString().split('T')[0];
@@ -4580,6 +4979,255 @@ function exportOperasionalPDF() {
   }
 
   doc.save(`Biaya-Operasional-${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
+// ════════════════════════════════════════════════════════════════
+// BACKUP & RESTORE
+// ════════════════════════════════════════════════════════════════
+
+let _restoreData = null; // data parsed dari file JSON yang dipilih
+
+function renderBackupRestore() {
+  renderBackupStats();
+  renderBackupHistory();
+}
+
+function renderBackupStats() {
+  const el = document.getElementById('backup-stats');
+  if (!el) return;
+  const rows = [
+    { label: 'Purchase Order', icon: '📄', count: (db.po||[]).length },
+    { label: 'Tagihan PO',     icon: '🧾', count: (db.tagihan||[]).length },
+    { label: 'No. JCN',        icon: '🔖', count: (db.jcn||[]).length },
+    { label: 'Master APD',     icon: '🦺', count: (db.apd||[]).length },
+    { label: 'Penerimaan',     icon: '✅', count: (db.terima||[]).length },
+    { label: 'Pengeluaran',    icon: '📤', count: (db.keluar||[]).length },
+    { label: 'Rencana Beli',   icon: '📝', count: (db.rencana||[]).length },
+    { label: 'Biaya Ops',      icon: '💰', count: (db.operasional||[]).length },
+  ];
+  const totalRecords = rows.reduce((a, r) => a + r.count, 0);
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      ${rows.map(r => `
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm)">
+          <span style="font-size:16px">${r.icon}</span>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted)">${r.label}</div>
+            <div style="font-size:15px;font-weight:800;color:var(--text-strong)">${r.count}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="font-size:12.5px;color:var(--text-muted);text-align:right;padding:0 2px">Total ${totalRecords} record siap di-backup</div>
+  `;
+}
+
+function renderBackupHistory() {
+  const el = document.getElementById('backup-history-content');
+  if (!el) return;
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('promanage_backup_history') || '[]'); } catch(e) {}
+  if (!history.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:24px"><div class="empty-state-icon" style="font-size:32px">📭</div><p>Belum ada riwayat export di perangkat ini.</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr>
+        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);background:var(--bg);border-bottom:1px solid var(--border)">Waktu Export</th>
+        <th style="text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);background:var(--bg);border-bottom:1px solid var(--border)">Nama File</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);background:var(--bg);border-bottom:1px solid var(--border)">Total Record</th>
+        <th style="text-align:right;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);background:var(--bg);border-bottom:1px solid var(--border)">Ukuran</th>
+      </tr></thead>
+      <tbody>
+        ${history.slice().reverse().map(h => `
+          <tr>
+            <td style="padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border)">${h.time}</td>
+            <td style="padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);font-family:monospace;color:var(--steel)">${h.filename}</td>
+            <td style="padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);text-align:right">${h.records} record</td>
+            <td style="padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);text-align:right;color:var(--text-muted)">${h.size}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div style="padding:12px 14px;text-align:right">
+      <button class="btn btn-outline btn-sm" onclick="clearBackupHistory()" style="color:var(--danger);border-color:var(--danger)">🗑 Hapus Riwayat</button>
+    </div>
+  `;
+}
+
+function clearBackupHistory() {
+  localStorage.removeItem('promanage_backup_history');
+  renderBackupHistory();
+  showToast('Riwayat backup dihapus.', 'info');
+}
+
+function exportBackup() {
+  const ts = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tsStr = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}`;
+  const filename = `ProManage_Backup_${tsStr}.json`;
+
+  const payload = {
+    _meta: {
+      app: 'ProManage',
+      version: '1.0',
+      exportedAt: ts.toISOString(),
+      exportedAtLocal: ts.toLocaleString('id-ID'),
+    },
+    data: db
+  };
+
+  const json = JSON.stringify(payload);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Hitung total record
+  const totalRecords = ['po','tagihan','apd','rencana','terima','keluar','jcn','operasional']
+    .reduce((s, k) => s + ((db[k]||[]).length), 0);
+
+  // Simpan ke riwayat
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('promanage_backup_history') || '[]'); } catch(e) {}
+  history.push({
+    time: ts.toLocaleString('id-ID'),
+    filename,
+    records: totalRecords,
+    size: formatBytes(blob.size)
+  });
+  // Simpan max 20 riwayat terakhir
+  if (history.length > 20) history = history.slice(-20);
+  localStorage.setItem('promanage_backup_history', JSON.stringify(history));
+
+  showToast(`Backup berhasil diunduh: ${filename}`, 'success', 4000);
+  renderBackupHistory();
+  document.getElementById('backup-last-export').textContent = `Terakhir export: ${ts.toLocaleString('id-ID')}`;
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(2) + ' MB';
+}
+
+// ── File select/drop untuk import ──
+function handleRestoreFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadRestoreFile(file);
+}
+
+function handleRestoreDrop(e) {
+  e.preventDefault();
+  document.getElementById('restore-drop-zone').style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file) loadRestoreFile(file);
+}
+
+function loadRestoreFile(file) {
+  if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+    showToast('Hanya file JSON yang diperbolehkan.', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      // Validasi struktur minimal
+      if (!parsed.data || typeof parsed.data !== 'object') {
+        showToast('File tidak valid: bukan file backup ProManage.', 'error');
+        return;
+      }
+      _restoreData = parsed;
+      showRestorePreview(file.name, parsed, file.size);
+    } catch(err) {
+      showToast('Gagal membaca file JSON: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showRestorePreview(filename, parsed, fileSize) {
+  const d = parsed.data || {};
+  const meta = parsed._meta || {};
+  const rows = [
+    { label: 'Purchase Order', count: (d.po||[]).length },
+    { label: 'Tagihan PO',     count: (d.tagihan||[]).length },
+    { label: 'No. JCN',        count: (d.jcn||[]).length },
+    { label: 'Master APD',     count: (d.apd||[]).length },
+    { label: 'Penerimaan',     count: (d.terima||[]).length },
+    { label: 'Pengeluaran',    count: (d.keluar||[]).length },
+    { label: 'Rencana Beli',   count: (d.rencana||[]).length },
+    { label: 'Biaya Ops',      count: (d.operasional||[]).length },
+  ];
+  const total = rows.reduce((a,r)=>a+r.count,0);
+
+  document.getElementById('restore-file-name').textContent = '📂 ' + filename;
+  document.getElementById('restore-file-stats').innerHTML =
+    (meta.exportedAtLocal ? `<div>📅 Di-export pada: <strong>${meta.exportedAtLocal}</strong></div>` : '') +
+    rows.map(r => `<div>${r.label}: <strong>${r.count} record</strong></div>`).join('') +
+    `<div style="margin-top:6px;font-weight:700;color:var(--text-strong)">Total: ${total} record &nbsp;·&nbsp; ${formatBytes(fileSize)}</div>`;
+
+  document.getElementById('restore-file-preview').style.display = 'block';
+
+  // Isi modal konfirmasi
+  document.getElementById('confirm-restore-filename').textContent = filename;
+  document.getElementById('confirm-restore-stats').textContent = `${total} record dari ${meta.exportedAtLocal || 'tanggal tidak diketahui'}`;
+  document.getElementById('confirm-restore-input').value = '';
+  document.getElementById('btn-do-restore').disabled = true;
+  document.getElementById('btn-do-restore').style.opacity = '0.5';
+  document.getElementById('btn-do-restore').style.cursor = 'not-allowed';
+}
+
+function cancelRestoreFile() {
+  _restoreData = null;
+  document.getElementById('restore-file-preview').style.display = 'none';
+  document.getElementById('restore-file-input').value = '';
+}
+
+function validateRestoreInput() {
+  const val = document.getElementById('confirm-restore-input').value.trim();
+  const btn = document.getElementById('btn-do-restore');
+  if (val === 'RESTORE') {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+async function doRestore() {
+  if (!_restoreData || !_restoreData.data) {
+    showToast('Tidak ada data untuk di-restore.', 'error');
+    return;
+  }
+  closeModal('modal-confirm-restore');
+  document.getElementById('confirm-restore-input').value = '';
+
+  try {
+    db = _restoreData.data;
+    // Pastikan semua array ada
+    ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional'].forEach(k => { if(!db[k]) db[k] = []; });
+    if (!db.roles || !db.roles.length) {
+      db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
+    }
+    await saveDB();
+
+    _restoreData = null;
+    cancelRestoreFile();
+
+    showToast('Data berhasil di-restore! Halaman akan dimuat ulang...', 'success', 3000);
+    setTimeout(() => window.location.reload(), 2500);
+  } catch(err) {
+    showToast('Gagal menyimpan data restore: ' + err.message, 'error');
+  }
 }
 
 </script>
