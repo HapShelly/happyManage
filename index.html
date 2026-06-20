@@ -513,7 +513,7 @@
   .page-header-actions { display: flex; gap: 10px; flex-shrink: 0; }
 
   /* ── APD PHOTO CARDS ── */
-  .apd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+  .apd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
   .apd-card {
     background: var(--white);
     border-radius: var(--radius);
@@ -525,21 +525,22 @@
   .apd-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
   .apd-photo {
     width: 100%;
-    height: 140px;
-    object-fit: cover;
+    height: 200px;
+    object-fit: contain;
     display: block;
     background: var(--bg);
+    padding: 8px;
   }
   .apd-photo-placeholder {
     width: 100%;
-    height: 140px;
+    height: 200px;
     background: var(--mint);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     color: var(--steel);
-    font-size: 36px;
+    font-size: 48px;
   }
   .apd-photo-placeholder span { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
   .apd-info { padding: 12px 14px; }
