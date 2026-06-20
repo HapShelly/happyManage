@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ProManage – PO & APD Management</title>
+<title>Happy – YKPP Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -148,7 +147,7 @@
   .sidebar {
     width: var(--sidebar-w);
     background: var(--navy);
-    min-height: 100vh;
+    height: 100vh;
     position: fixed;
     top: 0; left: 0;
     display: flex;
@@ -160,6 +159,7 @@
   .sidebar-brand {
     padding: 24px 20px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
   }
   .brand-logo {
     display: flex;
@@ -179,7 +179,12 @@
   .brand-text strong { display: block; font-size: 15px; font-weight: 700; }
   .brand-text span { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 400; }
 
-  .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+  .sidebar-nav { flex: 1; min-height: 0; padding: 16px 12px; overflow-y: auto; }
+  .sidebar-nav::-webkit-scrollbar { width: 6px; }
+  .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
+  .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
+  .sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
   .nav-label {
     font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
     color: rgba(255,255,255,0.35);
@@ -216,6 +221,7 @@
     border-top: 1px solid rgba(255,255,255,0.08);
     color: rgba(255,255,255,0.45);
     font-size: 11.5px;
+    flex-shrink: 0;
   }
 
   /* ── MAIN ── */
@@ -396,6 +402,22 @@
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
   }
+  th[data-sort-key] {
+    cursor: pointer;
+    user-select: none;
+    transition: color .15s, background .15s;
+  }
+  th[data-sort-key]:hover { color: var(--steel); background: var(--mint); }
+  th[data-sort-key].sort-asc,
+  th[data-sort-key].sort-desc { color: var(--steel); }
+  .sort-icon {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 9px;
+    opacity: .45;
+  }
+  th[data-sort-key].sort-asc .sort-icon,
+  th[data-sort-key].sort-desc .sort-icon { opacity: 1; }
   td {
     padding: 12px 14px;
     border-bottom: 1px solid var(--border);
@@ -777,8 +799,8 @@
     <a class="brand-logo" href="#">
       <div class="brand-icon">📋</div>
       <div class="brand-text">
-        <strong>ProManage</strong>
-        <span>PO & APD System</span>
+        <strong>HappyManage</strong>
+        <span>Manage System</span>
       </div>
     </a>
   </div>
@@ -817,9 +839,14 @@
     <div class="nav-item" onclick="showPage('apd-keluar', this)">
       <span class="nav-icon">📤</span> Pengeluaran Barang
     </div>
+
+    <div class="nav-label">Operasional</div>
+    <div class="nav-item" onclick="showPage('operasional', this)">
+      <span class="nav-icon">💰</span> Biaya Operasional
+    </div>
   </div>
   <div class="sidebar-footer">
-    ProManage v1.0 &nbsp;·&nbsp; © 2025
+    HappyManage v1.0 &nbsp;·&nbsp; © 2025
   </div>
 </nav>
 
@@ -847,6 +874,9 @@
 
       <!-- STAT CARDS -->
       <div class="grid-4" id="dash-stats"></div>
+
+      <!-- BIAYA OPERASIONAL CARD -->
+      <div id="dash-ops-card" style="margin-bottom:24px"></div>
 
       <!-- ALERT AREA -->
       <div id="dash-alerts"></div>
@@ -969,13 +999,13 @@
           <table id="tbl-po">
             <thead>
               <tr>
-                <th>No. PO</th>
-                <th>Nama / Deskripsi</th>
-                <th>Nilai PO</th>
-                <th>Total Ditagihkan</th>
-                <th>Sisa</th>
-                <th>% Terpakai</th>
-                <th>Status</th>
+                <th data-sort-key="noPO" onclick="toggleSort('po-list','noPO',renderPOList)">No. PO <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="nama" onclick="toggleSort('po-list','nama',renderPOList)">Nama / Deskripsi <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="nilai" onclick="toggleSort('po-list','nilai',renderPOList)">Nilai PO <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="total" onclick="toggleSort('po-list','total',renderPOList)">Total Ditagihkan <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="sisa" onclick="toggleSort('po-list','sisa',renderPOList)">Sisa <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="pct" onclick="toggleSort('po-list','pct',renderPOList)">% Terpakai <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="status" onclick="toggleSort('po-list','status',renderPOList)">Status <span class="sort-icon">⇅</span></th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -1025,11 +1055,11 @@
           <table>
             <thead>
               <tr>
-                <th>Tanggal</th>
-                <th>No. PO</th>
-                <th>Nama PO</th>
-                <th>Periode</th>
-                <th>Nominal Tagihan</th>
+                <th data-sort-key="tanggal" onclick="toggleSort('tagihan','tanggal',renderTagihan)">Tanggal <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="noPO" onclick="toggleSort('tagihan','noPO',renderTagihan)">No. PO <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="namaPO" onclick="toggleSort('tagihan','namaPO',renderTagihan)">Nama PO <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="periode" onclick="toggleSort('tagihan','periode',renderTagihan)">Periode <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="nominal" onclick="toggleSort('tagihan','nominal',renderTagihan)">Nominal Tagihan <span class="sort-icon">⇅</span></th>
                 <th>Keterangan</th>
                 <th>Status PO</th>
                 <th>Aksi</th>
@@ -1108,10 +1138,10 @@
             <thead>
               <tr>
                 <th style="width:40px">No</th>
-                <th>Tanggal</th>
-                <th>No. JCN</th>
-                <th>Uraian Pekerjaan</th>
-                <th>Status</th>
+                <th data-sort-key="date" onclick="toggleSort('jcn','date',renderJCN)">Tanggal <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="no" onclick="toggleSort('jcn','no',renderJCN)">No. JCN <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="desc" onclick="toggleSort('jcn','desc',renderJCN)">Uraian Pekerjaan <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="status" onclick="toggleSort('jcn','status',renderJCN)">Status <span class="sort-icon">⇅</span></th>
                 <th style="width:130px">Aksi</th>
               </tr>
             </thead>
@@ -1158,12 +1188,12 @@
           <table>
             <thead>
               <tr>
-                <th>Nama APD</th>
-                <th>Kategori</th>
-                <th>Satuan</th>
-                <th>Stok Saat Ini</th>
-                <th>Stok Min</th>
-                <th>Status Stok</th>
+                <th data-sort-key="nama" onclick="toggleSort('stok','nama',renderStok)">Nama APD <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="kategori" onclick="toggleSort('stok','kategori',renderStok)">Kategori <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="satuan" onclick="toggleSort('stok','satuan',renderStok)">Satuan <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="stok" onclick="toggleSort('stok','stok',renderStok)">Stok Saat Ini <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="stokMin" onclick="toggleSort('stok','stokMin',renderStok)">Stok Min <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="statusStok" onclick="toggleSort('stok','statusStok',renderStok)">Status Stok <span class="sort-icon">⇅</span></th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -1191,11 +1221,11 @@
           <table>
             <thead>
               <tr>
-                <th>Nama APD</th>
-                <th>Stok Saat Ini</th>
+                <th data-sort-key="namaApd" onclick="toggleSort('rencana','namaApd',renderRencana)">Nama APD <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="stokNow" onclick="toggleSort('rencana','stokNow',renderRencana)">Stok Saat Ini <span class="sort-icon">⇅</span></th>
                 <th>Breakdown Role</th>
-                <th>Qty Total</th>
-                <th>Satuan</th>
+                <th data-sort-key="qty" onclick="toggleSort('rencana','qty',renderRencana)">Qty Total <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="satuan" onclick="toggleSort('rencana','satuan',renderRencana)">Satuan <span class="sort-icon">⇅</span></th>
                 <th>Catatan</th>
                 <th>Aksi</th>
               </tr>
@@ -1226,10 +1256,10 @@
           <table>
             <thead>
               <tr>
-                <th>Tgl Terima</th>
-                <th>Nama APD</th>
-                <th>Qty Diterima</th>
-                <th>Satuan</th>
+                <th data-sort-key="tgl" onclick="toggleSort('terima','tgl',renderTerima)">Tgl Terima <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="namaApd" onclick="toggleSort('terima','namaApd',renderTerima)">Nama APD <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="qty" onclick="toggleSort('terima','qty',renderTerima)">Qty Diterima <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="satuan" onclick="toggleSort('terima','satuan',renderTerima)">Satuan <span class="sort-icon">⇅</span></th>
                 <th>Catatan</th>
                 <th>Aksi</th>
               </tr>
@@ -1257,16 +1287,77 @@
           <table>
             <thead>
               <tr>
-                <th>Tanggal</th>
-                <th>Nama APD</th>
-                <th>Qty Keluar</th>
-                <th>Satuan</th>
+                <th data-sort-key="tgl" onclick="toggleSort('keluar','tgl',renderKeluar)">Tanggal <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="namaApd" onclick="toggleSort('keluar','namaApd',renderKeluar)">Nama APD <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="qty" onclick="toggleSort('keluar','qty',renderKeluar)">Qty Keluar <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="satuan" onclick="toggleSort('keluar','satuan',renderKeluar)">Satuan <span class="sort-icon">⇅</span></th>
                 <th>Penerima / Keterangan</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody id="tbl-keluar-body"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════ BIAYA OPERASIONAL ════════════════════════════════ -->
+    <div id="page-operasional" class="page">
+      <div class="page-header">
+        <div>
+          <h1>Biaya Operasional</h1>
+          <p>Pencatatan biaya operasional untuk penagihan perusahaan</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline" onclick="exportOperasionalPDF()">📄 Export PDF</button>
+          <button class="btn btn-primary" onclick="openModal('modal-add-operasional')">＋ Tambah Biaya</button>
+        </div>
+      </div>
+
+      <div class="grid-4" id="operasional-stats"></div>
+
+      <!-- FILTER BAR -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body" style="padding:16px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label>Dari Tanggal</label>
+              <input type="date" id="filter-ops-dari" oninput="renderOperasional()" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;outline:none;width:100%" onfocus="this.style.borderColor='var(--steel)'" onblur="this.style.borderColor='var(--border)'">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Sampai Tanggal</label>
+              <input type="date" id="filter-ops-sampai" oninput="renderOperasional()" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;outline:none;width:100%" onfocus="this.style.borderColor='var(--steel)'" onblur="this.style.borderColor='var(--border)'">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Cari Uraian</label>
+              <input type="text" id="filter-ops-uraian" placeholder="Cari uraian biaya..." oninput="renderOperasional()" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;outline:none;width:100%" onfocus="this.style.borderColor='var(--steel)'" onblur="this.style.borderColor='var(--border)'">
+            </div>
+            <button class="btn btn-outline" onclick="resetFilterOperasional()" style="white-space:nowrap">🔄 Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body table-wrap">
+          <table id="tbl-operasional">
+            <thead>
+              <tr>
+                <th style="width:40px">No</th>
+                <th data-sort-key="tanggal" onclick="toggleSort('operasional','tanggal',renderOperasional)">Tanggal <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="uraian" onclick="toggleSort('operasional','uraian',renderOperasional)">Uraian <span class="sort-icon">⇅</span></th>
+                <th data-sort-key="jumlah" onclick="toggleSort('operasional','jumlah',renderOperasional)">Jumlah <span class="sort-icon">⇅</span></th>
+                <th>Keterangan</th>
+                <th style="width:90px">Bukti</th>
+                <th style="width:130px">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-operasional-body"></tbody>
+          </table>
+          <div id="operasional-empty" style="display:none;text-align:center;padding:48px 24px;color:var(--text-muted)">
+            <div style="font-size:48px;margin-bottom:12px;opacity:.4">💰</div>
+            <h3 style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Belum ada biaya operasional</h3>
+            <p style="font-size:13px">Klik "+ Tambah Biaya" untuk mulai mencatat.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1858,6 +1949,78 @@
   </div>
 </div>
 
+<!-- ADD/EDIT BIAYA OPERASIONAL -->
+<div class="modal-overlay" id="modal-add-operasional">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-ops-title">Tambah Biaya Operasional</div>
+      <button class="btn-close" onclick="closeModal('modal-add-operasional')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Tanggal *</label>
+          <input type="date" id="ops-tanggal">
+        </div>
+        <div class="form-group">
+          <label>Jumlah (Rp) *</label>
+          <input type="number" id="ops-jumlah" placeholder="0" min="0">
+        </div>
+        <div class="form-group full">
+          <label>Uraian *</label>
+          <input type="text" id="ops-uraian" placeholder="Misal: Beli materai 10.000">
+        </div>
+        <div class="form-group full">
+          <label>Keterangan</label>
+          <textarea id="ops-keterangan" rows="3" placeholder="Catatan tambahan (opsional)"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Upload Bukti Nota</label>
+          <div class="file-input-wrap" onclick="document.getElementById('ops-bukti-input').click()">
+            <div class="file-input-icon">🧾</div>
+            <div class="file-input-text">Klik untuk upload bukti nota<br><small>JPG, PNG, PDF – maks 15MB</small></div>
+            <input type="file" id="ops-bukti-input" accept="image/jpeg,image/jpg,image/png,application/pdf" onchange="previewOpsBukti(event)">
+          </div>
+          <img id="ops-bukti-preview" class="file-preview" alt="Preview">
+          <div id="ops-bukti-pdf-name" style="display:none;margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);font-size:12.5px;color:var(--text-muted)">📄 <span id="ops-bukti-pdf-name-text"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-operasional')">Batal</button>
+      <button class="btn btn-primary" onclick="saveOperasional()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW BUKTI OPERASIONAL -->
+<div class="modal-overlay" id="modal-preview-bukti">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">👁 Preview Bukti Nota</div>
+      <button class="btn-close" onclick="closeModal('modal-preview-bukti')">✕</button>
+    </div>
+    <div class="modal-body" id="preview-bukti-content" style="text-align:center"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-preview-bukti')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL BIAYA OPERASIONAL -->
+<div class="modal-overlay" id="modal-detail-operasional">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">👁 Detail Biaya Operasional</div>
+      <button class="btn-close" onclick="closeModal('modal-detail-operasional')">✕</button>
+    </div>
+    <div class="modal-body" id="detail-operasional-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-detail-operasional')">Tutup</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 
@@ -1915,24 +2078,101 @@ let db = {
   terima: [],
   keluar: [],
   jcn: [],
+  operasional: [],
   roles: ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping']
 };
 
 // Load from localStorage
-function loadDB() {
-  const saved = localStorage.getItem('promanage_db');
-  if (saved) {
-    try { db = JSON.parse(saved); } catch(e) {}
+// ════════════════ STORAGE LAYER (IndexedDB, dengan fallback localStorage) ════════════════
+// Data aplikasi disimpan di IndexedDB (kapasitas jauh lebih besar dari localStorage, cocok untuk bukti nota/foto).
+// Tema/preferensi UI tetap di localStorage (data kecil, tidak perlu IndexedDB).
+const IDB_NAME = 'ProManageDB';
+const IDB_VERSION = 1;
+const IDB_STORE = 'appdata';
+const IDB_KEY = 'promanage_db';
+let _idbInstance = null;
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB tidak didukung browser ini')); return; }
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const idb = req.result;
+      if (!idb.objectStoreNames.contains(IDB_STORE)) idb.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet() {
+  const idb = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = idb.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbSet(value) {
+  const idb = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = idb.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, IDB_KEY);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Memuat data saat aplikasi pertama dibuka. Async karena IndexedDB selalu async,
+// makanya dipanggil dengan `await loadDB()` sekali di awal sebelum render pertama.
+async function loadDB() {
+  try {
+    const fromIdb = await idbGet();
+    if (fromIdb) {
+      db = fromIdb;
+    } else {
+      // IndexedDB kosong — kemungkinan pertama kali pakai versi ini.
+      // Migrasi otomatis dari localStorage versi lama, supaya data lama tidak hilang.
+      const legacy = localStorage.getItem(IDB_KEY);
+      if (legacy) {
+        try { db = JSON.parse(legacy); } catch (e) {}
+        await idbSet(db); // pindahkan ke IndexedDB supaya selanjutnya pakai ini
+      }
+    }
+  } catch (e) {
+    // Browser tidak mendukung IndexedDB (mode privat ketat, dsb) — pakai localStorage sebagai fallback penuh.
+    console.warn('IndexedDB tidak tersedia, memakai localStorage sebagai fallback:', e);
+    const saved = localStorage.getItem(IDB_KEY);
+    if (saved) { try { db = JSON.parse(saved); } catch (e2) {} }
   }
   // Ensure all arrays exist
-  ['po','tagihan','apd','rencana','terima','jcn'].forEach(k => { if(!db[k]) db[k] = []; });
+  ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional'].forEach(k => { if(!db[k]) db[k] = []; });
   if (!db.roles || !db.roles.length) {
     db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
   }
 }
 
-function saveDB() {
-  localStorage.setItem('promanage_db', JSON.stringify(db));
+// Dipanggil di 24+ titik di seluruh modul, selalu TANPA await (fire-and-forget) supaya
+// urutan render UI yang sudah ada (sinkron) tidak perlu diubah sama sekali.
+// Tidak pernah reject (supaya 23 pemanggil lama yang tidak menangani .catch tidak memunculkan
+// "unhandled promise rejection" di console) — selalu resolve dengan boolean sukses/gagal.
+// Saat gagal total (IndexedDB & localStorage penuh/tidak tersedia), toast generik muncul otomatis,
+// KECUALI dipanggil dengan saveDB(true) — silent, untuk pemanggil yang ingin menampilkan toast sendiri (lihat saveOperasional).
+function saveDB(silent) {
+  return idbSet(db)
+    .then(() => true)
+    .catch(e => {
+      try {
+        localStorage.setItem(IDB_KEY, JSON.stringify(db));
+        return true;
+      } catch (e2) {
+        console.error('Gagal menyimpan data ke IndexedDB maupun localStorage:', e, e2);
+        if (!silent) showToast('Gagal menyimpan data: penyimpanan browser penuh.', 'error');
+        return false;
+      }
+    });
 }
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -1947,7 +2187,8 @@ const pageTitles = {
   'apd-rencana': 'Rencana Pembelian',
   'apd-terima': 'Terima Barang',
   'apd-keluar': 'Pengeluaran Barang',
-  'jcn-master': 'Master Data No. JCN'
+  'jcn-master': 'Master Data No. JCN',
+  'operasional': 'Biaya Operasional'
 };
 
 function showPage(id, el) {
@@ -1977,6 +2218,7 @@ const skeletonMap = {
   'apd-rencana': { tbody: 'tbl-rencana-body', cols: 6 },
   'apd-terima':  { tbody: 'tbl-terima-body',  cols: 5 },
   'apd-keluar':  { tbody: 'tbl-keluar-body',  cols: 6 },
+  'operasional': { tbody: 'tbl-operasional-body', cols: 7 },
 };
 
 function showPageSkeleton(id) {
@@ -2042,6 +2284,7 @@ function renderPage(id) {
   else if (id === 'apd-terima') renderTerima();
   else if (id === 'apd-keluar') renderKeluar();
   else if (id === 'jcn-master') renderJCN();
+  else if (id === 'operasional') renderOperasional();
 }
 
 // ════════════════ MODAL ════════════════
@@ -2053,6 +2296,7 @@ function openModal(id) {
   if (id === 'modal-roles') document.getElementById('roles-textarea').value = db.roles.join('\n');
   if (id === 'modal-terima') populateTerimaModal();
   if (id === 'modal-add-apd') resetAPDModal();
+  if (id === 'modal-add-operasional' && !editingOpsId) resetOperasionalModal();
   document.getElementById(id).classList.add('show');
 }
 function closeModal(id) {
@@ -2065,6 +2309,20 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 // ════════════════ HELPERS ════════════════
 function fmtRp(n) {
   return 'Rp ' + (Number(n)||0).toLocaleString('id-ID');
+}
+
+// Format tanggal DD/MM/YYYY, dipakai khusus di tabel rincian PDF Biaya Operasional
+function fmtDateSlash(str) {
+  if (!str) return '-';
+  const [y,m,d] = str.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// Format tanggal "1 Februari 2026" (nama bulan panjang), dipakai untuk teks periode di PDF
+function fmtDateLong(str) {
+  if (!str) return '-';
+  const [y,m,d] = str.split('-');
+  return `${parseInt(d)} ${bulanNamaID[parseInt(m)-1]} ${y}`;
 }
 
 function pctClass(pct) {
@@ -2083,6 +2341,62 @@ function getTotalTagihan(poId) {
 
 function getPoById(id) { return db.po.find(p => p.id === id); }
 function getApdById(id) { return db.apd.find(a => a.id === id); }
+
+// ════════════════ SORT TABEL (GENERIK UNTUK SEMUA MODUL) ════════════════
+// State sort per tabel: key = null artinya pakai urutan default bawaan masing-masing render function
+const sortState = {
+  'po-list':     { key: null, dir: 1 },
+  'tagihan':     { key: null, dir: 1 },
+  'stok':        { key: null, dir: 1 },
+  'rencana':     { key: null, dir: 1 },
+  'terima':      { key: null, dir: 1 },
+  'keluar':      { key: null, dir: 1 },
+  'jcn':         { key: null, dir: 1 },
+  'operasional': { key: null, dir: 1 },
+};
+
+// Comparator universal: deteksi otomatis apakah nilai numerik, tanggal (YYYY-MM-DD), atau teks
+function compareValues(a, b) {
+  if (a == null) a = '';
+  if (b == null) b = '';
+  const aNum = typeof a === 'number' ? a : (a !== '' && !isNaN(a) ? Number(a) : null);
+  const bNum = typeof b === 'number' ? b : (b !== '' && !isNaN(b) ? Number(b) : null);
+  if (aNum !== null && bNum !== null) return aNum - bNum;
+  return String(a).localeCompare(String(b), 'id-ID', { numeric: true, sensitivity: 'base' });
+}
+
+// Toggle arah sort saat header diklik: belum aktif -> asc, asc -> desc, desc -> kembali ke default (null)
+function toggleSort(tableName, key, renderFn) {
+  const st = sortState[tableName];
+  if (st.key !== key) { st.key = key; st.dir = 1; }
+  else if (st.dir === 1) { st.dir = -1; }
+  else { st.key = null; st.dir = 1; } // klik ke-3 -> kembali ke urutan default tabel
+  renderFn();
+}
+
+// Terapkan sort aktif ke array data, memakai fungsi getter per kolom (fieldMap)
+function applySort(tableName, data, fieldMap) {
+  const st = sortState[tableName];
+  if (!st.key || !fieldMap[st.key]) return data; // tidak ada sort aktif -> kembalikan urutan asli (default)
+  const getter = fieldMap[st.key];
+  return [...data].sort((a, b) => compareValues(getter(a), getter(b)) * st.dir);
+}
+
+// Update ikon panah (▲▼) pada header <th data-sort-key="..."> sesuai state aktif
+function renderSortIndicators(tableName, theadSelector) {
+  const st = sortState[tableName];
+  document.querySelectorAll(`${theadSelector} th[data-sort-key]`).forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    const icon = th.querySelector('.sort-icon');
+    if (!icon) return;
+    if (th.dataset.sortKey === st.key) {
+      th.classList.add(st.dir === 1 ? 'sort-asc' : 'sort-desc');
+      icon.textContent = st.dir === 1 ? '▲' : '▼';
+    } else {
+      icon.textContent = '⇅';
+    }
+  });
+}
 
 // ════════════════ DASHBOARD ════════════════
 function renderDashboard() {
@@ -2117,6 +2431,25 @@ function renderDashboard() {
       <div class="stat-sub">&nbsp;</div>
     </div>
   `;
+
+  // Card Total Biaya Operasional
+  const totalOps = db.operasional.reduce((s,o) => s + (Number(o.jumlah)||0), 0);
+  const nowOps = new Date();
+  const opsBulanIni = db.operasional.filter(o => {
+    const d = new Date(o.tanggal + 'T00:00:00');
+    return d.getFullYear() === nowOps.getFullYear() && d.getMonth() === nowOps.getMonth();
+  }).reduce((s,o) => s + (Number(o.jumlah)||0), 0);
+  document.getElementById('dash-ops-card').innerHTML = `
+    <div class="card" style="cursor:pointer" onclick="showPage('operasional', document.querySelector('[onclick*=operasional]'))">
+      <div class="card-body" style="display:flex;align-items:center;gap:18px;padding:20px 24px">
+        <div style="font-size:32px;flex-shrink:0">💰</div>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Total Biaya Operasional</div>
+          <div style="font-size:22px;font-weight:800;color:var(--text-strong);margin-top:4px">${fmtRp(totalOps)}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${db.operasional.length} transaksi tercatat · ${fmtRp(opsBulanIni)} bulan ini</div>
+        </div>
+      </div>
+    </div>`;
 
   // Alerts
   let alertsHtml = '';
@@ -2332,26 +2665,35 @@ function renderPOList() {
   const tbody = document.getElementById('tbl-po-body');
   if (db.po.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada PO. Klik "+ Tambah PO" untuk mulai.</td></tr>`;
+    renderSortIndicators('po-list', '#tbl-po');
     return;
   }
-  tbody.innerHTML = db.po.map(p => {
+  // Pre-compute nilai terhitung (total tagihan, sisa, %) agar bisa ikut disortir
+  let rows = db.po.map(p => {
     const total = getTotalTagihan(p.id);
     const sisa = (Number(p.nilai)||0) - total;
     const pct = p.nilai > 0 ? Math.min(100, total / p.nilai * 100) : 0;
-    const cls = pctClass(pct);
+    return { ...p, total, sisa, pct };
+  });
+  rows = applySort('po-list', rows, {
+    noPO: r => r.noPO, nama: r => r.nama, nilai: r => Number(r.nilai)||0,
+    total: r => r.total, sisa: r => r.sisa, pct: r => r.pct, status: r => r.status,
+  });
+  tbody.innerHTML = rows.map(p => {
+    const cls = pctClass(p.pct);
     const statusBadge = p.status === 'Aktif' ? 'badge-aman' : p.status === 'Selesai' ? 'badge-info' : 'badge-info';
     return `<tr>
       <td><strong>${p.noPO}</strong></td>
       <td>${p.nama}<br><small style="color:var(--text-muted)">${p.date||''}</small></td>
       <td>${fmtRp(p.nilai)}</td>
-      <td>${fmtRp(total)}</td>
-      <td style="color:${sisa < 0 ? 'var(--danger)' : 'var(--success)'};font-weight:700">${fmtRp(sisa)}</td>
+      <td>${fmtRp(p.total)}</td>
+      <td style="color:${p.sisa < 0 ? 'var(--danger)' : 'var(--success)'};font-weight:700">${fmtRp(p.sisa)}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="progress-track" style="flex:1;min-width:70px">
-            <div class="progress-fill ${cls}" style="width:${pct}%"></div>
+            <div class="progress-fill ${cls}" style="width:${p.pct}%"></div>
           </div>
-          <span style="font-size:11px;font-weight:700;color:var(--text-muted)">${pct.toFixed(0)}%</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted)">${p.pct.toFixed(0)}%</span>
         </div>
       </td>
       <td><span class="badge ${statusBadge}">${p.status}</span></td>
@@ -2365,6 +2707,7 @@ function renderPOList() {
       </td>
     </tr>`;
   }).join('');
+  renderSortIndicators('po-list', '#tbl-po');
 }
 
 function showTagihanForPO(poId) {
@@ -2489,17 +2832,23 @@ function renderTagihan() {
   if (db.tagihan.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada tagihan.</td></tr>`;
     if (emptyEl) emptyEl.style.display = 'none';
+    renderSortIndicators('tagihan', '#page-po-tagihan thead');
     return;
   }
 
-  let data = [...db.tagihan].sort((a,b) => b.tanggal > a.tanggal ? 1 : -1);
+  let data = [...db.tagihan].sort((a,b) => b.tanggal > a.tanggal ? 1 : -1); // default: tanggal terbaru dulu
   if (filterPO)      data = data.filter(t => t.poId === filterPO);
   if (filterPeriode) data = data.filter(t => (t.periode||'').toLowerCase().includes(filterPeriode));
   if (filterKet)     data = data.filter(t => (t.ket||'').toLowerCase().includes(filterKet));
+  data = applySort('tagihan', data, {
+    tanggal: t => t.tanggal, noPO: t => t.noPO || '', namaPO: t => t.namaPO || '',
+    periode: t => t.periode || '', nominal: t => Number(t.nominal)||0,
+  });
 
   if (data.length === 0) {
     tbody.innerHTML = '';
     if (emptyEl) emptyEl.style.display = 'block';
+    renderSortIndicators('tagihan', '#page-po-tagihan thead');
     return;
   }
   if (emptyEl) emptyEl.style.display = 'none';
@@ -2524,6 +2873,7 @@ function renderTagihan() {
       </td>
     </tr>`;
   }).join('');
+  renderSortIndicators('tagihan', '#page-po-tagihan thead');
 }
 
 // ════════════════ APD MASTER ════════════════
@@ -2659,9 +3009,18 @@ function renderStok() {
   const tbody = document.getElementById('tbl-stok-body');
   if (db.apd.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada data APD.</td></tr>`;
+    renderSortIndicators('stok', '#page-apd-stok thead');
     return;
   }
-  tbody.innerHTML = db.apd.map(a => {
+  let rows = db.apd.map(a => {
+    const statusStok = a.stok <= 0 ? 2 : a.stok <= a.stokMin ? 1 : 0; // urutan keparahan: Habis > Rendah > Aman
+    return { ...a, statusStok };
+  });
+  rows = applySort('stok', rows, {
+    nama: r => r.nama, kategori: r => r.kategori, satuan: r => r.satuan,
+    stok: r => Number(r.stok)||0, stokMin: r => Number(r.stokMin)||0, statusStok: r => r.statusStok,
+  });
+  tbody.innerHTML = rows.map(a => {
     const stokStatus = a.stok <= 0 ? 'badge-kritis' : a.stok <= a.stokMin ? 'badge-perhatian' : 'badge-aman';
     const stokLabel = a.stok <= 0 ? 'Habis' : a.stok <= a.stokMin ? 'Di bawah minimum' : 'Aman';
     return `<tr>
@@ -2681,6 +3040,7 @@ function renderStok() {
       </td>
     </tr>`;
   }).join('');
+  renderSortIndicators('stok', '#page-apd-stok thead');
 }
 
 // ════════════════ ROLES ════════════════
@@ -2746,14 +3106,18 @@ function deleteRencana(id) {
 
 function renderRencana() {
   const tbody = document.getElementById('tbl-rencana-body');
-  let totalQty = 0;
   if (db.rencana.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada rencana pembelian.</td></tr>`;
     document.getElementById('total-rencana').textContent = '0';
+    renderSortIndicators('rencana', '#page-apd-rencana thead');
     return;
   }
-  tbody.innerHTML = db.rencana.map(r => {
-    totalQty += Number(r.qty) || 0;
+  const totalQty = db.rencana.reduce((s, r) => s + (Number(r.qty)||0), 0);
+  const rows = applySort('rencana', db.rencana, {
+    namaApd: r => r.namaApd, stokNow: r => Number(r.stokNow)||0,
+    qty: r => Number(r.qty)||0, satuan: r => r.satuan,
+  });
+  tbody.innerHTML = rows.map(r => {
     const breakdownHtml = r.breakdown && Object.keys(r.breakdown).length
       ? `<ul style="margin:0;padding-left:16px;font-size:12px;color:var(--text-muted)">${Object.entries(r.breakdown).map(([role,q]) => `<li>${role} (${q})</li>`).join('')}</ul>`
       : '-';
@@ -2772,6 +3136,7 @@ function renderRencana() {
     </tr>`;
   }).join('');
   document.getElementById('total-rencana').textContent = totalQty;
+  renderSortIndicators('rencana', '#page-apd-rencana thead');
 }
 
 // ════════════════ EXPORT PDF RENCANA ════════════════
@@ -2878,9 +3243,13 @@ function renderTerima() {
   const tbody = document.getElementById('tbl-terima-body');
   if (db.terima.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada penerimaan barang.</td></tr>`;
+    renderSortIndicators('terima', '#page-apd-terima thead');
     return;
   }
-  const sorted = [...db.terima].sort((a,b) => b.tgl > a.tgl ? 1 : -1);
+  let sorted = [...db.terima].sort((a,b) => b.tgl > a.tgl ? 1 : -1); // default: tanggal terbaru dulu
+  sorted = applySort('terima', sorted, {
+    tgl: t => t.tgl, namaApd: t => t.namaApd, qty: t => Number(t.qty)||0, satuan: t => t.satuan,
+  });
   tbody.innerHTML = sorted.map(t => `<tr>
     <td>${t.tgl}</td>
     <td><strong>${t.namaApd}</strong></td>
@@ -2893,6 +3262,7 @@ function renderTerima() {
       <button class="btn btn-danger btn-sm" onclick="deleteTerima('${t.id}')" title="Hapus">🗑</button>
     </td>
   </tr>`).join('');
+  renderSortIndicators('terima', '#page-apd-terima thead');
 }
 
 function deleteTerima(id) {
@@ -3020,9 +3390,14 @@ function renderJCN() {
   if (data.length === 0) {
     tbody.innerHTML = '';
     empty.style.display = 'block';
+    renderSortIndicators('jcn', '#page-jcn-master thead');
     return;
   }
   empty.style.display = 'none';
+
+  data = applySort('jcn', data, {
+    date: j => j.date, no: j => j.no, desc: j => j.desc, status: j => j.status,
+  });
 
   tbody.innerHTML = data.map((j, idx) => {
     const used = j.status === 'Sudah Dipakai';
@@ -3044,6 +3419,7 @@ function renderJCN() {
       </td>
     </tr>`;
   }).join('');
+  renderSortIndicators('jcn', '#page-jcn-master thead');
 }
 
 
@@ -3084,10 +3460,13 @@ function setDate() {
   document.getElementById('topbar-date').textContent = now.toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 }
 
-loadDB();
-applyTheme(localStorage.getItem('promanage_theme') || 'light', true);
-setDate();
-renderDashboard();
+async function initApp() {
+  await loadDB(); // WAJIB ditunggu — IndexedDB selalu async, render pertama tidak boleh jalan sebelum data termuat
+  applyTheme(localStorage.getItem('promanage_theme') || 'light', true);
+  setDate();
+  renderDashboard();
+}
+initApp();
 
 // ════════════════ DETAIL & EDIT FUNCTIONS ════════════════
 
@@ -3505,9 +3884,13 @@ function renderKeluar() {
   if (!tbody) return;
   if (db.keluar.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada catatan pengeluaran barang.</td></tr>`;
+    renderSortIndicators('keluar', '#page-apd-keluar thead');
     return;
   }
-  const sorted = [...db.keluar].sort((a,b) => b.tgl > a.tgl ? 1 : -1);
+  let sorted = [...db.keluar].sort((a,b) => b.tgl > a.tgl ? 1 : -1); // default: tanggal terbaru dulu
+  sorted = applySort('keluar', sorted, {
+    tgl: k => k.tgl, namaApd: k => k.namaApd, qty: k => Number(k.qty)||0, satuan: k => k.satuan||'',
+  });
   tbody.innerHTML = sorted.map(k => `<tr>
     <td>${k.tgl}</td>
     <td><strong>${k.namaApd}</strong></td>
@@ -3520,6 +3903,438 @@ function renderKeluar() {
       <button class="btn btn-danger btn-sm" onclick="deleteKeluar('${k.id}')" title="Hapus">🗑</button>
     </td>
   </tr>`).join('');
+  renderSortIndicators('keluar', '#page-apd-keluar thead');
+}
+
+// ════════════════ BIAYA OPERASIONAL ════════════════
+let editingOpsId = null;
+let opsBuktiData = null;      // base64 file asli (gambar atau PDF), disimpan tanpa kompresi
+let opsBuktiType = null;      // 'image' | 'pdf'
+let opsBuktiName = null;      // nama file asli, dipakai untuk tampilan PDF
+
+function previewOpsBukti(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const isPdf = file.type === 'application/pdf';
+  const isImage = file.type.startsWith('image/');
+  if (!isPdf && !isImage) {
+    showToast('Format file harus JPG, PNG, atau PDF.', 'error');
+    e.target.value = '';
+    return;
+  }
+  // Batas dinaikkan dari versi localStorage (dulu 5MB) — IndexedDB menampung jauh lebih besar,
+  // dan bukti nota kini disimpan tanpa kompresi (kualitas/resolusi asli) sesuai permintaan.
+  if (file.size > 15 * 1024 * 1024) {
+    showToast('Ukuran file maksimal 15MB.', 'error');
+    e.target.value = '';
+    return;
+  }
+  const imgPreview = document.getElementById('ops-bukti-preview');
+  const pdfNameBox = document.getElementById('ops-bukti-pdf-name');
+  const pdfNameText = document.getElementById('ops-bukti-pdf-name-text');
+
+  // Gambar maupun PDF disimpan persis seperti file aslinya (tanpa kompresi) — IndexedDB cukup luas untuk ini.
+  const reader = new FileReader();
+  reader.onload = ev => {
+    opsBuktiData = ev.target.result;
+    opsBuktiType = isImage ? 'image' : 'pdf';
+    opsBuktiName = file.name;
+    if (isImage) {
+      imgPreview.src = opsBuktiData;
+      imgPreview.style.display = 'block';
+      pdfNameBox.style.display = 'none';
+    } else {
+      imgPreview.style.display = 'none';
+      imgPreview.src = '';
+      pdfNameText.textContent = file.name;
+      pdfNameBox.style.display = 'block';
+    }
+  };
+  reader.onerror = () => showToast('Gagal membaca file.', 'error');
+  reader.readAsDataURL(file);
+}
+
+function resetOperasionalModal() {
+  editingOpsId = null;
+  opsBuktiData = null;
+  opsBuktiType = null;
+  opsBuktiName = null;
+  document.getElementById('modal-ops-title').textContent = 'Tambah Biaya Operasional';
+  document.getElementById('ops-tanggal').valueAsDate = new Date();
+  ['ops-uraian','ops-jumlah','ops-keterangan'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ops-bukti-input').value = '';
+  document.getElementById('ops-bukti-preview').style.display = 'none';
+  document.getElementById('ops-bukti-preview').src = '';
+  document.getElementById('ops-bukti-pdf-name').style.display = 'none';
+}
+
+function saveOperasional() {
+  const tanggal = document.getElementById('ops-tanggal').value;
+  const uraian = document.getElementById('ops-uraian').value.trim();
+  const jumlah = Number(document.getElementById('ops-jumlah').value) || 0;
+  const keterangan = document.getElementById('ops-keterangan').value.trim();
+
+  if (!tanggal) return showToast('Tanggal wajib diisi!', 'error');
+  if (!uraian) return showToast('Uraian wajib diisi!', 'error');
+  if (!jumlah || jumlah <= 0) return showToast('Jumlah wajib diisi!', 'error');
+
+  const existing = editingOpsId ? db.operasional.find(o => o.id === editingOpsId) : null;
+  const obj = {
+    id: editingOpsId || genId(),
+    tanggal, uraian, jumlah, keterangan,
+    buktiData: opsBuktiData || existing?.buktiData || null,
+    buktiType: opsBuktiType || existing?.buktiType || null,
+    buktiName: opsBuktiName || existing?.buktiName || null,
+  };
+
+  if (editingOpsId) {
+    const idx = db.operasional.findIndex(o => o.id === editingOpsId);
+    if (idx >= 0) db.operasional[idx] = obj;
+  } else {
+    db.operasional.push(obj);
+  }
+
+  saveDB(true).then(success => {
+    if (!success) {
+      // Gagal simpan (storage penuh, dsb) — rollback perubahan di memory agar tidak nyangkut tanpa tersimpan
+      if (editingOpsId) {
+        const idx = db.operasional.findIndex(o => o.id === editingOpsId);
+        if (idx >= 0 && existing) db.operasional[idx] = existing;
+      } else {
+        db.operasional.pop();
+      }
+      showToast('Gagal menyimpan: penyimpanan browser penuh. Hapus beberapa bukti nota lama atau gunakan file lebih kecil.', 'error');
+      return;
+    }
+    closeModal('modal-add-operasional');
+    renderOperasional();
+    showToast(editingOpsId ? 'Biaya operasional berhasil diperbarui' : 'Biaya operasional berhasil ditambahkan');
+  });
+}
+
+function editOperasional(id) {
+  const o = db.operasional.find(x => x.id === id);
+  if (!o) return;
+  editingOpsId = id;
+  opsBuktiData = null;
+  opsBuktiType = null;
+  opsBuktiName = null;
+  document.getElementById('modal-ops-title').textContent = 'Edit Biaya Operasional';
+  document.getElementById('ops-tanggal').value = o.tanggal;
+  document.getElementById('ops-uraian').value = o.uraian;
+  document.getElementById('ops-jumlah').value = o.jumlah;
+  document.getElementById('ops-keterangan').value = o.keterangan || '';
+  document.getElementById('ops-bukti-input').value = '';
+  const imgPreview = document.getElementById('ops-bukti-preview');
+  const pdfNameBox = document.getElementById('ops-bukti-pdf-name');
+  const pdfNameText = document.getElementById('ops-bukti-pdf-name-text');
+  if (o.buktiType === 'image' && o.buktiData) {
+    imgPreview.src = o.buktiData; imgPreview.style.display = 'block';
+    pdfNameBox.style.display = 'none';
+  } else if (o.buktiType === 'pdf' && o.buktiData) {
+    imgPreview.style.display = 'none'; imgPreview.src = '';
+    pdfNameText.textContent = o.buktiName || 'bukti.pdf';
+    pdfNameBox.style.display = 'block';
+  } else {
+    imgPreview.style.display = 'none'; imgPreview.src = '';
+    pdfNameBox.style.display = 'none';
+  }
+  document.getElementById('modal-add-operasional').classList.add('show');
+}
+
+function deleteOperasional(id) {
+  if (!confirm('Hapus catatan biaya operasional ini?')) return;
+  db.operasional = db.operasional.filter(o => o.id !== id);
+  saveDB();
+  renderOperasional();
+  showToast('Biaya operasional dihapus', 'info');
+}
+
+function previewOperasionalBukti(id) {
+  const o = db.operasional.find(x => x.id === id);
+  if (!o || !o.buktiData) return;
+  const content = document.getElementById('preview-bukti-content');
+  if (o.buktiType === 'image') {
+    content.innerHTML = `<img src="${o.buktiData}" style="max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border)" alt="Bukti nota">`;
+  } else if (o.buktiType === 'pdf') {
+    content.innerHTML = `
+      <div style="padding:30px 20px">
+        <div style="font-size:48px;margin-bottom:12px">📄</div>
+        <p style="margin-bottom:16px;color:var(--text-muted);font-size:13px">${o.buktiName || 'bukti.pdf'}</p>
+        <a href="${o.buktiData}" download="${o.buktiName || 'bukti.pdf'}" class="btn btn-primary">⬇️ Download PDF</a>
+      </div>`;
+  }
+  openModal('modal-preview-bukti');
+}
+
+function resetFilterOperasional() {
+  ['filter-ops-dari','filter-ops-sampai','filter-ops-uraian'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  renderOperasional();
+}
+
+function detailOperasional(id) {
+  const o = db.operasional.find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('detail-operasional-content').innerHTML =
+    detailRow('Tanggal', fmtDate(o.tanggal)) +
+    detailRow('Uraian', `<strong>${o.uraian}</strong>`) +
+    detailRow('Jumlah', `<strong style="color:var(--steel)">${fmtRp(o.jumlah)}</strong>`) +
+    detailRow('Keterangan', o.keterangan || '-') +
+    detailRow('Bukti Nota', o.buktiData
+      ? `<button class="btn btn-outline btn-sm" onclick="closeModal('modal-detail-operasional');previewOperasionalBukti('${o.id}')">👁 Lihat Bukti</button>`
+      : 'Tidak ada bukti');
+  openModal('modal-detail-operasional');
+}
+
+function renderOperasional() {
+  const tbody = document.getElementById('tbl-operasional-body');
+  const emptyEl = document.getElementById('operasional-empty');
+  if (!tbody) return;
+
+  const dari   = document.getElementById('filter-ops-dari')?.value || '';
+  const sampai = document.getElementById('filter-ops-sampai')?.value || '';
+  const cari   = (document.getElementById('filter-ops-uraian')?.value || '').toLowerCase();
+
+  // Stat: dihitung dari SELURUH data (tidak ikut filter), sesuai pola modul JCN
+  const totalTransaksi = db.operasional.length;
+  const totalNominal = db.operasional.reduce((s, o) => s + (Number(o.jumlah) || 0), 0);
+  const now = new Date();
+  const bulanIni = db.operasional.filter(o => {
+    const d = new Date(o.tanggal + 'T00:00:00');
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).reduce((s, o) => s + (Number(o.jumlah) || 0), 0);
+
+  document.getElementById('operasional-stats').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-icon">🧾</div>
+      <div class="stat-label">Total Transaksi</div>
+      <div class="stat-value">${totalTransaksi}</div>
+      <div class="stat-sub">Seluruh catatan</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="stat-icon">💰</div>
+      <div class="stat-label">Total Nominal</div>
+      <div class="stat-value" style="font-size:18px">${fmtRp(totalNominal)}</div>
+      <div class="stat-sub">Akumulasi semua biaya</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">📅</div>
+      <div class="stat-label">Biaya Bulan Ini</div>
+      <div class="stat-value" style="font-size:18px">${fmtRp(bulanIni)}</div>
+      <div class="stat-sub">${bulanNamaID[now.getMonth()]} ${now.getFullYear()}</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon">📎</div>
+      <div class="stat-label">Dengan Bukti Nota</div>
+      <div class="stat-value">${db.operasional.filter(o => o.buktiData).length}</div>
+      <div class="stat-sub">dari ${totalTransaksi} transaksi</div>
+    </div>`;
+
+  let data = [...db.operasional].sort((a,b) => b.tanggal > a.tanggal ? 1 : -1); // default: tanggal terbaru dulu
+  if (dari)   data = data.filter(o => o.tanggal >= dari);
+  if (sampai) data = data.filter(o => o.tanggal <= sampai);
+  if (cari)   data = data.filter(o => o.uraian.toLowerCase().includes(cari));
+  data = applySort('operasional', data, {
+    tanggal: o => o.tanggal, uraian: o => o.uraian, jumlah: o => Number(o.jumlah)||0,
+  });
+
+  if (data.length === 0) {
+    tbody.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    renderSortIndicators('operasional', '#tbl-operasional');
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  tbody.innerHTML = data.map((o, idx) => `<tr>
+    <td style="color:var(--text-muted);font-size:12px">${idx+1}</td>
+    <td style="white-space:nowrap">${fmtDate(o.tanggal)}</td>
+    <td><strong>${o.uraian}</strong></td>
+    <td><strong style="color:var(--steel)">${fmtRp(o.jumlah)}</strong></td>
+    <td style="max-width:200px;word-break:break-word;color:var(--text-muted);font-size:12px">${o.keterangan || '-'}</td>
+    <td>${o.buktiData ? `<button class="btn btn-outline btn-sm" onclick="previewOperasionalBukti('${o.id}')">👁 Lihat</button>` : '-'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-outline btn-sm" onclick="detailOperasional('${o.id}')" title="Detail" style="margin-right:4px">👁</button>
+      <button class="btn btn-outline btn-sm" onclick="editOperasional('${o.id}')" title="Edit" style="margin-right:4px">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteOperasional('${o.id}')" title="Hapus">🗑</button>
+    </td>
+  </tr>`).join('');
+  renderSortIndicators('operasional', '#tbl-operasional');
+}
+
+// ════════════════ EXPORT PDF BIAYA OPERASIONAL ════════════════
+function exportOperasionalPDF() {
+  if (!db.operasional.length) return showToast('Belum ada biaya operasional untuk diexport!', 'warn');
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 40;
+  let y = 50;
+
+  // Urutkan tanggal lama -> baru untuk laporan rincian (lebih natural dibaca sebagai riwayat)
+  const data = [...db.operasional].sort((a,b) => a.tanggal > b.tanggal ? 1 : -1);
+  const periodeAwal = data[0]?.tanggal;
+  const periodeAkhir = data[data.length-1]?.tanggal;
+
+  // ── HEADER ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text('RINCIAN BIAYA OPERASIONAL KOORDINATOR', pageW/2, y, { align:'center' });
+  y += 16;
+  doc.setFontSize(11);
+  doc.text('PT. USAHA YEKAPEPE', pageW/2, y, { align:'center' });
+  y += 14;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Dusun Remen Rt.001 Rw.002', pageW/2, y, { align:'center' });
+  y += 12;
+  doc.text('Kec. Jenu Kab. Tuban', pageW/2, y, { align:'center' });
+  y += 20;
+
+  doc.setDrawColor(0); doc.setLineWidth(1);
+  doc.line(marginX, y, pageW - marginX, y);
+  y += 20;
+
+  // ── INFO LOKASI & TANGGAL ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+  doc.text('Lokasi Kerja:', marginX, y);
+  doc.setFont('helvetica','normal');
+  doc.text('Trans - Pacific Petrochemical Indotama - Tuban', marginX + 80, y);
+  y += 16;
+  doc.setFont('helvetica','bold');
+  doc.text('Tanggal:', marginX, y);
+  doc.setFont('helvetica','normal');
+  const periodeText = periodeAwal && periodeAkhir
+    ? `${fmtDateLong(periodeAwal)} s/d ${fmtDateLong(periodeAkhir)}`
+    : '-';
+  doc.text(periodeText, marginX + 80, y);
+  y += 18;
+
+  doc.setDrawColor(180); doc.setLineWidth(0.5);
+  doc.line(marginX, y, pageW - marginX, y);
+  y += 18;
+
+  // ── TABEL RINCIAN (manual, tanpa plugin autoTable) ──
+  const colNo = marginX;
+  const colTgl = marginX + 28;
+  const colUraian = marginX + 92;
+  const colJumlah = pageW - marginX - 140;
+  const colKet = pageW - marginX - 70;
+  const colKetWidth = 70;
+
+  function drawTableHeader() {
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('No', colNo, y);
+    doc.text('Tanggal', colTgl, y);
+    doc.text('Uraian', colUraian, y);
+    doc.text('Jumlah', colJumlah, y);
+    doc.text('Keterangan', colKet, y);
+    y += 6;
+    doc.setDrawColor(0); doc.setLineWidth(0.7);
+    doc.line(marginX, y, pageW - marginX, y);
+    y += 14;
+    doc.setFont('helvetica','normal');
+  }
+  drawTableHeader();
+
+  let grandTotal = 0;
+  data.forEach((o, idx) => {
+    const ketLines = doc.splitTextToSize(o.keterangan || '-', colKetWidth);
+    const uraianLines = doc.splitTextToSize(o.uraian, colJumlah - colUraian - 10);
+    const rowLines = Math.max(ketLines.length, uraianLines.length, 1);
+    const rowHeight = rowLines * 12 + 6;
+
+    if (y + rowHeight > pageH - 90) {
+      doc.addPage();
+      y = 50;
+      drawTableHeader();
+    }
+
+    doc.setFontSize(9);
+    doc.text(String(idx + 1), colNo, y);
+    doc.text(fmtDateSlash(o.tanggal), colTgl, y);
+    doc.text(uraianLines, colUraian, y);
+    doc.text(fmtRp(o.jumlah), colJumlah, y);
+    doc.text(ketLines, colKet, y);
+    grandTotal += Number(o.jumlah) || 0;
+    y += rowHeight;
+  });
+
+  doc.setDrawColor(0); doc.setLineWidth(0.7);
+  doc.line(marginX, y, pageW - marginX, y);
+  y += 18;
+
+  // ── TOTAL ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5);
+  doc.text(`TOTAL : ${fmtRp(grandTotal)}`, marginX, y);
+  y += 20;
+  doc.setFont('helvetica','italic'); doc.setFontSize(9);
+  doc.text('* Bukti Asli Terlampir', marginX, y);
+  y += 40;
+
+  // ── TANDA TANGAN ──
+  if (y + 100 > pageH - 40) { doc.addPage(); y = 60; }
+  const sigColWidth = (pageW - marginX*2) / 2;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('Operasional', marginX + sigColWidth/2, y, { align:'center' });
+  doc.text('Koordinator Tuban', marginX + sigColWidth*1.5, y, { align:'center' });
+  y += 60;
+  doc.text('____________________', marginX + sigColWidth/2, y, { align:'center' });
+  doc.text('____________________', marginX + sigColWidth*1.5, y, { align:'center' });
+
+  // ── LAMPIRAN BUKTI (halaman baru per kelompok, foto satu per satu) ──
+  const withBukti = data.filter(o => o.buktiData);
+  if (withBukti.length) {
+    doc.addPage();
+    let ly = 50;
+    doc.setFont('helvetica','bold'); doc.setFontSize(13);
+    doc.text('Lampiran Bukti Pengeluaran', pageW/2, ly, { align:'center' });
+    ly += 30;
+
+    withBukti.forEach((o, idx) => {
+      const labelHeight = 16;
+      const isImage = o.buktiType === 'image';
+      const imgMaxW = pageW - marginX*2;
+      const imgMaxH = 260;
+
+      // Halaman baru kalau tidak cukup ruang untuk label + konten
+      const neededHeight = labelHeight + (isImage ? imgMaxH : 20) + 24;
+      if (ly + neededHeight > pageH - 40) {
+        doc.addPage();
+        ly = 50;
+      }
+
+      doc.setFont('helvetica','bold'); doc.setFontSize(10.5);
+      doc.text(`${idx + 1}. ${o.uraian}`, marginX, ly);
+      ly += labelHeight;
+
+      if (isImage) {
+        try {
+          // Hitung dimensi gambar asli agar proporsional, dibatasi max width/height halaman
+          const imgProps = doc.getImageProperties(o.buktiData);
+          let w = imgMaxW, h = (imgProps.height / imgProps.width) * w;
+          if (h > imgMaxH) { h = imgMaxH; w = (imgProps.width / imgProps.height) * h; }
+          doc.addImage(o.buktiData, 'JPEG', marginX, ly, w, h);
+          ly += h + 24;
+        } catch (e) {
+          doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(150);
+          doc.text('(Gagal menampilkan gambar bukti)', marginX, ly);
+          doc.setTextColor(0);
+          ly += 24;
+        }
+      } else {
+        // Bukti berupa PDF: cukup tampilkan nama file, sesuai instruksi
+        doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(90);
+        doc.text(`📄 File PDF terlampir: ${o.buktiName || 'bukti.pdf'}`, marginX, ly);
+        doc.setTextColor(0);
+        ly += 24;
+      }
+    });
+  }
+
+  doc.save(`Biaya-Operasional-${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 </script>
