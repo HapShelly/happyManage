@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Happy – YKPP Management</title>
+<title>ProManage – PO & APD Management</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -675,6 +676,7 @@
     .grid-2 { grid-template-columns: 1fr; }
     .form-grid { grid-template-columns: 1fr; }
     .topbar { padding: 0 16px; }
+    .jcn-add-row { grid-template-columns: 1fr !important; }
   }
   @media (max-width: 600px) {
     .grid-4 { grid-template-columns: 1fr; }
@@ -799,8 +801,8 @@
     <a class="brand-logo" href="#">
       <div class="brand-icon">📋</div>
       <div class="brand-text">
-        <strong>HappyManage</strong>
-        <span>Manage System</span>
+        <strong>ProManage</strong>
+        <span>PO & APD System</span>
       </div>
     </a>
   </div>
@@ -846,7 +848,7 @@
     </div>
   </div>
   <div class="sidebar-footer">
-    HappyManage v1.0 &nbsp;·&nbsp; © 2025
+    ProManage v1.0 &nbsp;·&nbsp; © 2025
   </div>
 </nav>
 
@@ -1094,18 +1096,16 @@
           <div class="card-title">＋ Tambah No. JCN</div>
         </div>
         <div class="card-body">
-          <div style="display:grid;grid-template-columns:160px 200px 1fr 170px auto;gap:12px;align-items:end">
+          <div class="jcn-add-row" style="display:grid;grid-template-columns:150px 1fr 170px;gap:12px;align-items:end">
             <div class="form-group" style="margin:0">
               <label>Tanggal *</label>
               <input type="date" id="jcn-date">
             </div>
             <div class="form-group" style="margin:0">
-              <label>No. JCN *</label>
-              <input type="text" id="jcn-no" placeholder="JCN-2025-001">
-            </div>
-            <div class="form-group" style="margin:0">
-              <label>Uraian Pekerjaan *</label>
-              <input type="text" id="jcn-desc" placeholder="Deskripsi pekerjaan...">
+              <label>No. PO (untuk Auto No. JCN)</label>
+              <select id="jcn-po">
+                <option value="">— Pilih No. PO —</option>
+              </select>
             </div>
             <div class="form-group" style="margin:0">
               <label>Status</label>
@@ -1113,6 +1113,19 @@
                 <option value="Belum Dipakai">Belum Dipakai</option>
                 <option value="Sudah Dipakai">Sudah Dipakai</option>
               </select>
+            </div>
+          </div>
+          <div class="jcn-add-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-top:12px">
+            <div class="form-group" style="margin:0">
+              <label>No. JCN *</label>
+              <div style="display:flex;gap:6px">
+                <input type="text" id="jcn-no" placeholder="JCN/05/05/2026/8100002321/005" style="flex:1">
+                <button type="button" class="btn btn-outline btn-sm" onclick="generateJCNNo()" title="Buat No. JCN otomatis dari Tanggal, No. PO & urutan berikutnya" style="white-space:nowrap">🔄 Auto</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Uraian Pekerjaan *</label>
+              <input type="text" id="jcn-desc" placeholder="Deskripsi pekerjaan...">
             </div>
             <button class="btn btn-primary" onclick="addJCN()" style="white-space:nowrap">＋ Tambah</button>
           </div>
@@ -2283,7 +2296,7 @@ function renderPage(id) {
   else if (id === 'apd-rencana') renderRencana();
   else if (id === 'apd-terima') renderTerima();
   else if (id === 'apd-keluar') renderKeluar();
-  else if (id === 'jcn-master') renderJCN();
+  else if (id === 'jcn-master') { populateJCNPoSelect(); renderJCN(); }
   else if (id === 'operasional') renderOperasional();
 }
 
@@ -3281,6 +3294,59 @@ function fmtDate(str) {
   return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
 }
 
+// Format No. JCN yang berlaku: JCN/tanggal/bulan/tahun/No.PO/No.Urut (mis. JCN/05/05/2026/8100002321/005).
+// Ambil segmen TERAKHIR (setelah '/' paling akhir) sebagai angka no. urut untuk keperluan sortir.
+// Jika format tidak sesuai / tidak ada angka di segmen terakhir, kembalikan null (akan jatuh ke perbandingan teks biasa).
+function getJCNUrutanValue(no) {
+  if (!no) return null;
+  const parts = String(no).trim().split('/');
+  const last = parts[parts.length - 1];
+  const n = parseInt(last, 10);
+  return isNaN(n) ? null : n;
+}
+
+// Isi dropdown "No. PO" pada form Tambah JCN (dipakai untuk generate No. JCN otomatis)
+function populateJCNPoSelect() {
+  const sel = document.getElementById('jcn-po');
+  if (!sel) return;
+  const current = sel.value;
+  if (!db.po || !db.po.length) {
+    sel.innerHTML = '<option value="">— Belum ada data PO —</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">— Pilih No. PO —</option>' +
+    db.po.map(p => `<option value="${p.id}">${p.noPO} – ${p.nama}</option>`).join('');
+  if (current && db.po.some(p => p.id === current)) sel.value = current;
+}
+
+// Cari no. urut berikutnya untuk PO tertentu, dengan menelusuri No. JCN yang sudah ada
+// dan memakai segmen ke-5 (index 4, No. PO) untuk mencocokkan, lalu ambil angka urut terbesar + 1.
+function getNextJCNUrutan(noPO) {
+  let maxN = 0;
+  (db.jcn || []).forEach(j => {
+    const parts = String(j.no || '').trim().split('/');
+    if (parts.length >= 6 && parts[4] === noPO) {
+      const n = parseInt(parts[5], 10);
+      if (!isNaN(n) && n > maxN) maxN = n;
+    }
+  });
+  return maxN + 1;
+}
+
+// Generate No. JCN otomatis: JCN/DD/MM/YYYY/NoPO/UrutBerikutnya (urut 3 digit, mis. 005)
+function generateJCNNo() {
+  const dateInput = document.getElementById('jcn-date');
+  const poSel     = document.getElementById('jcn-po');
+  if (!dateInput.value) { showToast('Isi Tanggal terlebih dahulu.', 'warn'); return; }
+  const po = (db.po || []).find(p => p.id === poSel.value);
+  if (!po) { showToast('Pilih No. PO terlebih dahulu untuk generate otomatis.', 'warn'); return; }
+  const [y, m, d] = dateInput.value.split('-');
+  const urut = getNextJCNUrutan(po.noPO);
+  const no = `JCN/${d}/${m}/${y}/${po.noPO}/${String(urut).padStart(3, '0')}`;
+  document.getElementById('jcn-no').value = no;
+  showToast(`No. JCN otomatis dibuat: ${no}`, 'success');
+}
+
 function addJCN() {
   const date   = document.getElementById('jcn-date').value;
   const no     = document.getElementById('jcn-no').value.trim();
@@ -3293,6 +3359,8 @@ function addJCN() {
   document.getElementById('jcn-desc').value = '';
   document.getElementById('jcn-status').value = 'Belum Dipakai';
   document.getElementById('jcn-date').valueAsDate = new Date();
+  const poSel = document.getElementById('jcn-po');
+  if (poSel) poSel.value = '';
   renderJCN();
 }
 
@@ -3395,8 +3463,19 @@ function renderJCN() {
   }
   empty.style.display = 'none';
 
+  // Urutan default (otomatis): berdasarkan No. JCN, dari No. Urut terbesar/terakhir ke terkecil
+  // (format JCN/tgl/bln/thn/NoPO/NoUrut → diambil segmen NoUrut di paling akhir).
+  // Jika user memilih sort kolom lain lewat klik header, urutan ini akan ditimpa oleh applySort di bawah.
+  data = [...data].sort((a, b) => {
+    const av = getJCNUrutanValue(a.no), bv = getJCNUrutanValue(b.no);
+    if (av === null && bv === null) return 0;
+    if (av === null) return 1;
+    if (bv === null) return -1;
+    return bv - av;
+  });
+
   data = applySort('jcn', data, {
-    date: j => j.date, no: j => j.no, desc: j => j.desc, status: j => j.status,
+    date: j => j.date, no: j => getJCNUrutanValue(j.no), desc: j => j.desc, status: j => j.status,
   });
 
   tbody.innerHTML = data.map((j, idx) => {
