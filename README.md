@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -556,6 +557,40 @@
   }
   .apd-stock-val { font-size: 18px; font-weight: 800; color: var(--text-strong); }
   .apd-stock-label { font-size: 10px; color: var(--text-muted); }
+
+  /* ── VARIAN APD ── */
+  .variant-chip-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .variant-chip {
+    font-size: 10.5px; font-weight: 600; padding: 3px 7px; border-radius: 6px;
+    background: var(--mint); color: var(--text-strong); white-space: nowrap;
+    border: 1px solid var(--mint-dark);
+  }
+  .variant-chip.v-kritis { background: var(--danger-light); color: var(--danger); border-color: transparent; }
+  .variant-chip.v-perhatian { background: var(--gold-light); color: #B07A00; border-color: transparent; }
+  .variant-builder-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+  .variant-row {
+    display: grid; grid-template-columns: 1fr 90px 90px 32px; gap: 8px; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .variant-row:last-child { border-bottom: none; }
+  .variant-row-label { font-size: 12.5px; font-weight: 600; color: var(--text-strong); }
+  .variant-row input { padding: 6px 8px; font-size: 12.5px; }
+  .variant-row-remove {
+    width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--white); color: var(--danger); cursor: pointer; font-size: 13px;
+  }
+  .variant-row-remove:hover { background: var(--danger-light); }
+  .checkbox-inline { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .checkbox-inline input { width: 16px; height: 16px; cursor: pointer; }
+  .stok-expand-toggle {
+    background: none; border: none; cursor: pointer; font-size: 11px; color: var(--steel);
+    margin-right: 6px; transition: transform .15s ease; display: inline-block;
+  }
+  .stok-expand-toggle.open { transform: rotate(90deg); }
+  .variant-stok-detail-row td { padding: 0 !important; background: var(--bg); }
+  .variant-stok-table { width: 100%; border-collapse: collapse; }
+  .variant-stok-table td { padding: 8px 16px 8px 46px; font-size: 12.5px; border-bottom: 1px dashed var(--border); }
+  .variant-stok-table tr:last-child td { border-bottom: none; }
 
   /* ── ALERT ── */
   .alert {
@@ -1611,11 +1646,37 @@
             <option>Buah</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group full">
+          <label class="checkbox-inline">
+            <input type="checkbox" id="apd-punya-varian" onchange="toggleVarianSection()">
+            <span>APD ini punya varian (ukuran / warna / lainnya)?</span>
+          </label>
+        </div>
+        <div class="form-group full" id="apd-varian-section" style="display:none">
+          <div class="variant-builder-box">
+            <label style="margin-bottom:8px;display:block">Atribut Varian</label>
+            <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px">
+              <label class="checkbox-inline"><input type="checkbox" id="apd-attr-ukuran" onchange="renderVarianAttrInputs()"> Ukuran</label>
+              <label class="checkbox-inline"><input type="checkbox" id="apd-attr-warna" onchange="renderVarianAttrInputs()"> Warna</label>
+              <label class="checkbox-inline"><input type="checkbox" id="apd-attr-custom" onchange="renderVarianAttrInputs()"> Atribut Lain</label>
+            </div>
+            <div class="form-group full" id="apd-attr-custom-label-wrap" style="display:none;margin-bottom:8px">
+              <label style="font-size:12px">Nama Atribut Lain</label>
+              <input type="text" id="apd-attr-custom-label" placeholder="Misal: Tipe" oninput="renderVarianAttrInputs()">
+            </div>
+            <div id="apd-varian-values-wrap"></div>
+            <button type="button" class="btn btn-outline btn-sm" style="margin-top:4px" onclick="generateVarianCombinations()">🔄 Generate Kombinasi Varian</button>
+            <div style="margin-top:14px">
+              <label style="margin-bottom:8px;display:block">Daftar Varian &amp; Stok <small style="font-weight:400;color:var(--text-muted)">(stok total APD = jumlah seluruh varian)</small></label>
+              <div id="apd-varian-table"><p style="font-size:12px;color:var(--text-muted);margin:0">Belum ada varian. Isi nilai atribut di atas lalu klik "Generate Kombinasi Varian".</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" id="apd-stok-awal-group">
           <label>Stok Awal</label>
           <input type="number" id="apd-stok" placeholder="0" min="0" value="0">
         </div>
-        <div class="form-group">
+        <div class="form-group" id="apd-stok-min-group">
           <label>Stok Minimum</label>
           <input type="number" id="apd-stok-min" placeholder="5" min="0" value="5">
         </div>
@@ -1643,7 +1704,11 @@
       <div class="form-grid">
         <div class="form-group full">
           <label>Pilih APD *</label>
-          <select id="adj-apd-id"></select>
+          <select id="adj-apd-id" onchange="onAdjApdChange()"></select>
+        </div>
+        <div class="form-group full" id="adj-varian-group" style="display:none">
+          <label>Pilih Varian *</label>
+          <select id="adj-varian-id"></select>
         </div>
         <div class="form-group">
           <label>Tipe Adjust</label>
@@ -1737,7 +1802,11 @@
       <div class="form-grid">
         <div class="form-group full">
           <label>APD yang Diterima *</label>
-          <select id="trm-apd-id"></select>
+          <select id="trm-apd-id" onchange="onTrmApdChange()"></select>
+        </div>
+        <div class="form-group full" id="trm-varian-group" style="display:none">
+          <label>Pilih Varian *</label>
+          <select id="trm-varian-id"></select>
         </div>
         <div class="form-group">
           <label>Tanggal Terima *</label>
@@ -1908,6 +1977,7 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="etrm-id">
+      <input type="hidden" id="etrm-varian-id">
       <div class="form-grid">
         <div class="form-group full">
           <label>Nama APD</label>
@@ -1946,8 +2016,12 @@
       <div class="form-grid">
         <div class="form-group full">
           <label>APD yang Dikeluarkan *</label>
-          <select id="klr-apd-id" onchange="updateKeluarStokInfo()"></select>
+          <select id="klr-apd-id" onchange="onKlrApdChange()"></select>
           <div id="klr-stok-info" style="margin-top:6px;font-size:12px;color:var(--text-muted)"></div>
+        </div>
+        <div class="form-group full" id="klr-varian-group" style="display:none">
+          <label>Pilih Varian *</label>
+          <select id="klr-varian-id" onchange="updateKeluarStokInfo()"></select>
         </div>
         <div class="form-group">
           <label>Tanggal Keluar *</label>
@@ -1979,6 +2053,7 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="eklr-id">
+      <input type="hidden" id="eklr-varian-id">
       <div class="form-grid">
         <div class="form-group full">
           <label>Nama APD</label>
@@ -2292,6 +2367,13 @@ async function loadDB() {
   if (!db.roles || !db.roles.length) {
     db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
   }
+  // Migrasi: pastikan field varian APD selalu ada (data lama belum punya konsep varian)
+  db.apd.forEach(a => {
+    if (a.hasVarian === undefined) a.hasVarian = false;
+    if (!Array.isArray(a.varianAtribut)) a.varianAtribut = [];
+    if (!Array.isArray(a.varianList)) a.varianList = [];
+    if (a.varianCustomLabel === undefined) a.varianCustomLabel = '';
+  });
 }
 
 // Dipanggil di 24+ titik di seluruh modul, selalu TANPA await (fire-and-forget) supaya
@@ -2493,6 +2575,82 @@ function getTotalTagihan(poId) {
 function getPoById(id) { return db.po.find(p => p.id === id); }
 function getApdById(id) { return db.apd.find(a => a.id === id); }
 
+// ════════════════ VARIAN APD — HELPER ════════════════
+function getVarianById(apd, varianId) {
+  if (!apd || !apd.hasVarian) return null;
+  return (apd.varianList || []).find(v => v.id === varianId) || null;
+}
+
+// Label ringkas sebuah varian, mis. "L · Biru" atau "42" atau "Tipe A"
+function getVarianLabel(apd, variant) {
+  if (!apd || !variant) return '-';
+  const parts = [];
+  if ((apd.varianAtribut || []).includes('ukuran') && variant.ukuran) parts.push(variant.ukuran);
+  if ((apd.varianAtribut || []).includes('warna') && variant.warna) parts.push(variant.warna);
+  if ((apd.varianAtribut || []).includes('custom') && variant.custom) parts.push(variant.custom);
+  return parts.length ? parts.join(' · ') : '-';
+}
+
+// Sinkronkan stok total APD = jumlah seluruh stok varian (dipanggil tiap kali stok varian berubah)
+function syncApdStokFromVarian(apd) {
+  if (!apd || !apd.hasVarian) return;
+  apd.stok = (apd.varianList || []).reduce((s, v) => s + (Number(v.stok) || 0), 0);
+}
+
+// Status stok terburuk dari seluruh varian (atau status tunggal bila tanpa varian)
+function getApdStokStatusInfo(apd) {
+  if (!apd) return { cls: 'badge-aman', label: 'Aman' };
+  if (apd.hasVarian) {
+    const list = apd.varianList || [];
+    if (!list.length) return { cls: 'badge-gray', label: 'Belum ada varian' };
+    const habis = list.some(v => (Number(v.stok) || 0) <= 0);
+    const rendah = list.some(v => (Number(v.stok) || 0) <= (Number(v.stokMin) || 0));
+    if (habis) return { cls: 'badge-kritis', label: 'Ada varian habis' };
+    if (rendah) return { cls: 'badge-perhatian', label: 'Ada varian rendah' };
+    return { cls: 'badge-aman', label: 'Aman' };
+  }
+  if (apd.stok <= 0) return { cls: 'badge-kritis', label: 'Habis' };
+  if (apd.stok <= apd.stokMin) return { cls: 'badge-perhatian', label: 'Di bawah minimum' };
+  return { cls: 'badge-aman', label: 'Aman' };
+}
+
+function isApdLowStock(apd) {
+  if (!apd) return false;
+  if (apd.hasVarian) return (apd.varianList || []).some(v => (Number(v.stok) || 0) <= (Number(v.stokMin) || 0));
+  return apd.stok <= apd.stokMin;
+}
+
+// Daftar item/varian dengan stok rendah, dipakai dashboard & alert (meratakan varian jadi baris tersendiri)
+function getLowStockEntries() {
+  const out = [];
+  db.apd.forEach(a => {
+    if (a.hasVarian) {
+      (a.varianList || []).forEach(v => {
+        if ((Number(v.stok) || 0) <= (Number(v.stokMin) || 0)) {
+          out.push({ apd: a, variant: v, nama: `${a.nama} — ${getVarianLabel(a, v)}`, stok: Number(v.stok) || 0, stokMin: Number(v.stokMin) || 0, kategori: a.kategori, foto: a.foto });
+        }
+      });
+    } else if (a.stok <= a.stokMin) {
+      out.push({ apd: a, variant: null, nama: a.nama, stok: a.stok, stokMin: a.stokMin, kategori: a.kategori, foto: a.foto });
+    }
+  });
+  return out;
+}
+
+// Hasil kali kartesian nilai-nilai tiap atribut yang aktif → daftar kombinasi varian
+function cartesianVarian(attrValueLists) {
+  // attrValueLists: [{key:'ukuran', values:['S','M']}, {key:'warna', values:['Biru']}]
+  let combos = [{}];
+  attrValueLists.forEach(attr => {
+    const next = [];
+    combos.forEach(c => {
+      attr.values.forEach(val => next.push({ ...c, [attr.key]: val }));
+    });
+    combos = next;
+  });
+  return combos;
+}
+
 // ════════════════ SORT TABEL (GENERIK UNTUK SEMUA MODUL) ════════════════
 // State sort per tabel: key = null artinya pakai urutan default bawaan masing-masing render function
 const sortState = {
@@ -2604,9 +2762,9 @@ function renderDashboard() {
 
   // Alerts
   let alertsHtml = '';
-  const stokRendah = db.apd.filter(a => a.stok <= a.stokMin);
+  const stokRendah = getLowStockEntries();
   if (stokRendah.length > 0) {
-    alertsHtml += `<div class="alert alert-warn"><span class="alert-icon">⚠️</span><div><strong>${stokRendah.length} item APD</strong> memiliki stok di bawah minimum – segera rencanakan pembelian.</div></div>`;
+    alertsHtml += `<div class="alert alert-warn"><span class="alert-icon">⚠️</span><div><strong>${stokRendah.length} item/varian APD</strong> memiliki stok di bawah minimum – segera rencanakan pembelian.</div></div>`;
   }
   db.po.filter(p => p.status === 'Aktif').forEach(p => {
     const total = getTotalTagihan(p.id);
@@ -2649,17 +2807,17 @@ function renderDashboard() {
   if (stokRendah.length === 0) {
     stokHtml = '<div class="empty-state"><div class="empty-state-icon">✅</div><h3>Semua stok aman</h3><p>Tidak ada APD di bawah stok minimum</p></div>';
   } else {
-    stokRendah.forEach(a => {
+    stokRendah.forEach(e => {
       stokHtml += `
         <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);">
-          ${a.foto ? `<img src="${a.foto}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">` : '<div style="width:40px;height:40px;border-radius:8px;background:var(--mint);display:flex;align-items:center;justify-content:center;font-size:18px;">🦺</div>'}
+          ${e.foto ? `<img src="${e.foto}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">` : '<div style="width:40px;height:40px;border-radius:8px;background:var(--mint);display:flex;align-items:center;justify-content:center;font-size:18px;">🦺</div>'}
           <div style="flex:1">
-            <div style="font-weight:600;font-size:13px">${a.nama}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${a.kategori}</div>
+            <div style="font-weight:600;font-size:13px">${e.nama}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${e.kategori}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-weight:800;color:var(--danger);font-size:15px">${a.stok}</div>
-            <div style="font-size:10px;color:var(--text-muted)">Min: ${a.stokMin}</div>
+            <div style="font-weight:800;color:var(--danger);font-size:15px">${e.stok}</div>
+            <div style="font-size:10px;color:var(--text-muted)">Min: ${e.stokMin}</div>
           </div>
         </div>`;
     });
@@ -3030,15 +3188,23 @@ function renderTagihan() {
 // ════════════════ APD MASTER ════════════════
 let editingApdId = null;
 let apdFotoData = null;
+let apdVarianList = []; // working list saat modal tambah/edit APD terbuka: [{id, ukuran, warna, custom, stok, stokMin}]
 
 function resetAPDModal() {
   editingApdId = null;
   apdFotoData = null;
+  apdVarianList = [];
   document.getElementById('modal-apd-title').textContent = 'Tambah Data APD';
   ['apd-nama','apd-stok','apd-stok-min','apd-ket'].forEach(id => document.getElementById(id).value = id==='apd-stok' ? '0' : id==='apd-stok-min' ? '5' : '');
   document.getElementById('apd-foto-preview').style.display = 'none';
   document.getElementById('apd-foto-preview').src = '';
   document.getElementById('apd-foto-input').value = '';
+  document.getElementById('apd-punya-varian').checked = false;
+  ['apd-attr-ukuran','apd-attr-warna','apd-attr-custom'].forEach(id => document.getElementById(id).checked = false);
+  document.getElementById('apd-attr-custom-label').value = '';
+  toggleVarianSection();
+  renderVarianAttrInputs();
+  renderVarianTable();
 }
 
 function previewApdPhoto(e) {
@@ -3054,16 +3220,146 @@ function previewApdPhoto(e) {
   reader.readAsDataURL(file);
 }
 
+// ── Varian builder ──
+function toggleVarianSection() {
+  const on = document.getElementById('apd-punya-varian').checked;
+  document.getElementById('apd-varian-section').style.display = on ? 'block' : 'none';
+  document.getElementById('apd-stok-awal-group').style.display = on ? 'none' : 'flex';
+  document.getElementById('apd-stok-min-group').style.display = on ? 'none' : 'flex';
+}
+
+function renderVarianAttrInputs() {
+  const wrap = document.getElementById('apd-varian-values-wrap');
+  const useUkuran = document.getElementById('apd-attr-ukuran').checked;
+  const useWarna = document.getElementById('apd-attr-warna').checked;
+  const useCustom = document.getElementById('apd-attr-custom').checked;
+  document.getElementById('apd-attr-custom-label-wrap').style.display = useCustom ? 'flex' : 'none';
+  const customLabel = (document.getElementById('apd-attr-custom-label').value || '').trim() || 'Atribut Lain';
+  let html = '';
+  if (useUkuran) html += `
+    <div class="form-group full" style="margin-bottom:8px">
+      <label style="font-size:12px">Nilai Ukuran <small style="font-weight:400;color:var(--text-muted)">(pisahkan koma, mis. S,M,L,XL,XXL)</small></label>
+      <input type="text" id="apd-varian-val-ukuran" placeholder="S,M,L,XL,XXL">
+    </div>`;
+  if (useWarna) html += `
+    <div class="form-group full" style="margin-bottom:8px">
+      <label style="font-size:12px">Nilai Warna <small style="font-weight:400;color:var(--text-muted)">(pisahkan koma, mis. Biru,Orange,Hijau)</small></label>
+      <input type="text" id="apd-varian-val-warna" placeholder="Biru,Orange,Hijau">
+    </div>`;
+  if (useCustom) html += `
+    <div class="form-group full" style="margin-bottom:8px">
+      <label style="font-size:12px">Nilai ${customLabel} <small style="font-weight:400;color:var(--text-muted)">(pisahkan koma)</small></label>
+      <input type="text" id="apd-varian-val-custom" placeholder="Tipe A,Tipe B">
+    </div>`;
+  wrap.innerHTML = html;
+}
+
+function generateVarianCombinations() {
+  const useUkuran = document.getElementById('apd-attr-ukuran').checked;
+  const useWarna = document.getElementById('apd-attr-warna').checked;
+  const useCustom = document.getElementById('apd-attr-custom').checked;
+  if (!useUkuran && !useWarna && !useCustom) return showToast('Pilih minimal 1 atribut varian dulu!', 'error');
+  const attrLists = [];
+  if (useUkuran) {
+    const vals = (document.getElementById('apd-varian-val-ukuran').value || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (vals.length) attrLists.push({ key: 'ukuran', values: vals });
+  }
+  if (useWarna) {
+    const vals = (document.getElementById('apd-varian-val-warna').value || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (vals.length) attrLists.push({ key: 'warna', values: vals });
+  }
+  if (useCustom) {
+    const vals = (document.getElementById('apd-varian-val-custom').value || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (vals.length) attrLists.push({ key: 'custom', values: vals });
+  }
+  if (!attrLists.length) return showToast('Isi nilai untuk atribut varian yang dipilih!', 'error');
+  const combos = cartesianVarian(attrLists);
+  let added = 0;
+  combos.forEach(c => {
+    const exists = apdVarianList.some(v =>
+      (v.ukuran || '') === (c.ukuran || '') &&
+      (v.warna || '') === (c.warna || '') &&
+      (v.custom || '') === (c.custom || ''));
+    if (!exists) {
+      apdVarianList.push({ id: genId(), ukuran: c.ukuran || '', warna: c.warna || '', custom: c.custom || '', stok: 0, stokMin: 5 });
+      added++;
+    }
+  });
+  renderVarianTable();
+  showToast(added > 0 ? `${added} kombinasi varian baru ditambahkan` : 'Semua kombinasi sudah ada di daftar', added > 0 ? 'success' : 'info');
+}
+
+function varianRowLabel(v) {
+  const parts = [];
+  if (v.ukuran) parts.push(v.ukuran);
+  if (v.warna) parts.push(v.warna);
+  if (v.custom) parts.push(v.custom);
+  return parts.join(' · ') || '-';
+}
+
+function renderVarianTable() {
+  const wrap = document.getElementById('apd-varian-table');
+  if (!apdVarianList.length) {
+    wrap.innerHTML = `<p style="font-size:12px;color:var(--text-muted);margin:0">Belum ada varian. Isi nilai atribut di atas lalu klik "Generate Kombinasi Varian".</p>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="variant-row" style="border-bottom:2px solid var(--border);font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase">
+      <div>Varian</div><div>Stok</div><div>Stok Min</div><div></div>
+    </div>
+    ${apdVarianList.map(v => `
+    <div class="variant-row">
+      <div class="variant-row-label">${varianRowLabel(v)}</div>
+      <input type="number" min="0" value="${v.stok}" oninput="updateVarianField('${v.id}','stok',this.value)">
+      <input type="number" min="0" value="${v.stokMin}" oninput="updateVarianField('${v.id}','stokMin',this.value)">
+      <button type="button" class="variant-row-remove" onclick="removeVarianRow('${v.id}')" title="Hapus varian">✕</button>
+    </div>`).join('')}
+    <div style="text-align:right;margin-top:8px;font-size:12.5px;font-weight:700;color:var(--text-strong)">
+      Total Stok: ${apdVarianList.reduce((s,v)=>s+(Number(v.stok)||0),0)}
+    </div>`;
+}
+
+function updateVarianField(id, field, value) {
+  const v = apdVarianList.find(x => x.id === id);
+  if (!v) return;
+  v[field] = Number(value) || 0;
+  // update total label tanpa render ulang seluruh input (supaya fokus input tidak hilang)
+  const totalEl = document.querySelector('#apd-varian-table > div:last-child');
+  if (totalEl) totalEl.textContent = `Total Stok: ${apdVarianList.reduce((s,vv)=>s+(Number(vv.stok)||0),0)}`;
+}
+
+function removeVarianRow(id) {
+  apdVarianList = apdVarianList.filter(v => v.id !== id);
+  renderVarianTable();
+}
+
 function saveAPD() {
   const nama = document.getElementById('apd-nama').value.trim();
   if (!nama) return showToast('Nama APD wajib diisi!', 'error');
+  const hasVarian = document.getElementById('apd-punya-varian').checked;
+  let varianAtribut = [];
+  let varianCustomLabel = '';
+  if (hasVarian) {
+    if (document.getElementById('apd-attr-ukuran').checked) varianAtribut.push('ukuran');
+    if (document.getElementById('apd-attr-warna').checked) varianAtribut.push('warna');
+    if (document.getElementById('apd-attr-custom').checked) {
+      varianAtribut.push('custom');
+      varianCustomLabel = (document.getElementById('apd-attr-custom-label').value || '').trim() || 'Atribut Lain';
+    }
+    if (!varianAtribut.length) return showToast('Pilih minimal 1 atribut varian!', 'error');
+    if (!apdVarianList.length) return showToast('Tambahkan minimal 1 varian (klik Generate Kombinasi Varian)!', 'error');
+  }
   const obj = {
     id: editingApdId || genId(),
     nama,
     kategori: document.getElementById('apd-kategori').value,
     satuan: document.getElementById('apd-satuan').value,
-    stok: Number(document.getElementById('apd-stok').value)||0,
-    stokMin: Number(document.getElementById('apd-stok-min').value)||5,
+    hasVarian,
+    varianAtribut,
+    varianCustomLabel,
+    varianList: hasVarian ? apdVarianList.map(v => ({ id: v.id, ukuran: v.ukuran||'', warna: v.warna||'', custom: v.custom||'', stok: Number(v.stok)||0, stokMin: Number(v.stokMin)||0 })) : [],
+    stok: hasVarian ? apdVarianList.reduce((s,v) => s + (Number(v.stok)||0), 0) : (Number(document.getElementById('apd-stok').value)||0),
+    stokMin: hasVarian ? 0 : (Number(document.getElementById('apd-stok-min').value)||5),
     ket: document.getElementById('apd-ket').value,
     foto: apdFotoData || (editingApdId ? getApdById(editingApdId)?.foto : null)
   };
@@ -3089,11 +3385,22 @@ function editAPD(id) {
   document.getElementById('apd-kategori').value = a.kategori;
   document.getElementById('apd-satuan').value = a.satuan;
   document.getElementById('apd-stok').value = a.stok;
-  document.getElementById('apd-stok-min').value = a.stokMin;
+  document.getElementById('apd-stok-min').value = a.stokMin || 5;
   document.getElementById('apd-ket').value = a.ket || '';
   const img = document.getElementById('apd-foto-preview');
   if (a.foto) { img.src = a.foto; img.style.display = 'block'; }
   else { img.style.display = 'none'; img.src = ''; }
+
+  apdVarianList = a.hasVarian ? JSON.parse(JSON.stringify(a.varianList || [])) : [];
+  document.getElementById('apd-punya-varian').checked = !!a.hasVarian;
+  document.getElementById('apd-attr-ukuran').checked = (a.varianAtribut||[]).includes('ukuran');
+  document.getElementById('apd-attr-warna').checked = (a.varianAtribut||[]).includes('warna');
+  document.getElementById('apd-attr-custom').checked = (a.varianAtribut||[]).includes('custom');
+  document.getElementById('apd-attr-custom-label').value = a.varianCustomLabel || '';
+  toggleVarianSection();
+  renderVarianAttrInputs();
+  renderVarianTable();
+
   document.getElementById('modal-add-apd').classList.add('show');
 }
 
@@ -3112,22 +3419,29 @@ function renderAPDCards() {
     return;
   }
   grid.innerHTML = db.apd.map(a => {
-    const stokStatus = a.stok <= 0 ? 'badge-kritis' : a.stok <= a.stokMin ? 'badge-perhatian' : 'badge-aman';
-    const stokLabel = a.stok <= 0 ? 'Habis' : a.stok <= a.stokMin ? 'Rendah' : 'Aman';
+    const status = getApdStokStatusInfo(a);
+    const stokLabel = status.label === 'Di bawah minimum' ? 'Rendah' : status.label;
+    const variantChips = a.hasVarian
+      ? `<div class="variant-chip-row">${(a.varianList||[]).map(v => {
+          const cls = (Number(v.stok)||0) <= 0 ? 'v-kritis' : (Number(v.stok)||0) <= (Number(v.stokMin)||0) ? 'v-perhatian' : '';
+          return `<span class="variant-chip ${cls}">${varianRowLabel(v)}: ${v.stok}</span>`;
+        }).join('')}</div>`
+      : '';
     return `<div class="apd-card">
       ${a.foto
         ? `<img class="apd-photo" src="${a.foto}" alt="${a.nama}">`
         : `<div class="apd-photo-placeholder">🦺<span>${a.kategori}</span></div>`}
       <div class="apd-info">
-        <div class="apd-name">${a.nama}</div>
+        <div class="apd-name">${a.nama}${a.hasVarian ? ' <span class="badge badge-info" style="font-size:9px;vertical-align:middle">Varian</span>' : ''}</div>
         <div class="apd-meta">${a.kategori}</div>
         <div class="apd-stock">
           <div>
             <div class="apd-stock-val">${a.stok} <small style="font-size:11px;font-weight:400;color:var(--text-muted)">${a.satuan}</small></div>
-            <div class="apd-stock-label">Stok Saat Ini</div>
+            <div class="apd-stock-label">${a.hasVarian ? 'Total Stok (semua varian)' : 'Stok Saat Ini'}</div>
           </div>
-          <span class="badge ${stokStatus}">${stokLabel}</span>
+          <span class="badge ${status.cls}">${stokLabel}</span>
         </div>
+        ${variantChips}
         <div style="display:flex;gap:6px;margin-top:10px">
           <button class="btn btn-outline btn-sm" style="flex:1" onclick="editAPD('${a.id}')">✏️ Edit</button>
           <button class="btn btn-danger btn-sm" onclick="deleteAPD('${a.id}')">🗑</button>
@@ -3138,8 +3452,30 @@ function renderAPDCards() {
 }
 
 // ════════════════ STOK ════════════════
-function populateAdjModal() {
-  document.getElementById('adj-apd-id').innerHTML = db.apd.map(a => `<option value="${a.id}">${a.nama} (stok: ${a.stok} ${a.satuan})</option>`).join('');
+function populateAdjModal(presetApdId, presetVarianId) {
+  const sel = document.getElementById('adj-apd-id');
+  sel.innerHTML = db.apd.map(a => `<option value="${a.id}">${a.nama} (stok: ${a.stok} ${a.satuan})</option>`).join('');
+  if (presetApdId) sel.value = presetApdId;
+  onAdjApdChange(presetVarianId);
+}
+
+function onAdjApdChange(presetVarianId) {
+  const apd = getApdById(document.getElementById('adj-apd-id').value);
+  const group = document.getElementById('adj-varian-group');
+  const varSel = document.getElementById('adj-varian-id');
+  if (apd && apd.hasVarian) {
+    group.style.display = 'flex';
+    varSel.innerHTML = (apd.varianList||[]).map(v => `<option value="${v.id}">${varianRowLabel(v)} (stok: ${v.stok})</option>`).join('');
+    if (presetVarianId) varSel.value = presetVarianId;
+  } else {
+    group.style.display = 'none';
+    varSel.innerHTML = '';
+  }
+}
+
+function openAdjustForVariant(apdId, varianId) {
+  openModal('modal-adj-stok');
+  populateAdjModal(apdId, varianId);
 }
 
 function saveAdjStok() {
@@ -3148,11 +3484,29 @@ function saveAdjStok() {
   const qty = Number(document.getElementById('adj-qty').value)||0;
   const idx = db.apd.findIndex(a => a.id === id);
   if (idx < 0) return;
-  if (tipe === 'tambah') db.apd[idx].stok += qty;
-  else if (tipe === 'kurang') db.apd[idx].stok = Math.max(0, db.apd[idx].stok - qty);
-  else db.apd[idx].stok = qty;
+  const apd = db.apd[idx];
+  if (apd.hasVarian) {
+    const varianId = document.getElementById('adj-varian-id').value;
+    const v = getVarianById(apd, varianId);
+    if (!v) return showToast('Pilih varian terlebih dahulu!', 'error');
+    if (tipe === 'tambah') v.stok += qty;
+    else if (tipe === 'kurang') v.stok = Math.max(0, v.stok - qty);
+    else v.stok = qty;
+    syncApdStokFromVarian(apd);
+  } else {
+    if (tipe === 'tambah') apd.stok += qty;
+    else if (tipe === 'kurang') apd.stok = Math.max(0, apd.stok - qty);
+    else apd.stok = qty;
+  }
   saveDB();
   closeModal('modal-adj-stok');
+  renderStok();
+}
+
+let stokExpandedIds = new Set();
+function toggleStokVarianRow(apdId) {
+  if (stokExpandedIds.has(apdId)) stokExpandedIds.delete(apdId);
+  else stokExpandedIds.add(apdId);
   renderStok();
 }
 
@@ -3164,7 +3518,9 @@ function renderStok() {
     return;
   }
   let rows = db.apd.map(a => {
-    const statusStok = a.stok <= 0 ? 2 : a.stok <= a.stokMin ? 1 : 0; // urutan keparahan: Habis > Rendah > Aman
+    const lowStock = isApdLowStock(a);
+    const habis = a.hasVarian ? (a.varianList||[]).some(v => (Number(v.stok)||0) <= 0) : a.stok <= 0;
+    const statusStok = habis ? 2 : lowStock ? 1 : 0; // urutan keparahan: Habis > Rendah > Aman
     return { ...a, statusStok };
   });
   rows = applySort('stok', rows, {
@@ -3172,24 +3528,45 @@ function renderStok() {
     stok: r => Number(r.stok)||0, stokMin: r => Number(r.stokMin)||0, statusStok: r => r.statusStok,
   });
   tbody.innerHTML = rows.map(a => {
-    const stokStatus = a.stok <= 0 ? 'badge-kritis' : a.stok <= a.stokMin ? 'badge-perhatian' : 'badge-aman';
-    const stokLabel = a.stok <= 0 ? 'Habis' : a.stok <= a.stokMin ? 'Di bawah minimum' : 'Aman';
-    return `<tr>
+    const status = getApdStokStatusInfo(a);
+    const stokLabel = status.label === 'Ada varian habis' ? 'Habis' : status.label === 'Ada varian rendah' ? 'Rendah' : status.label === 'Di bawah minimum' ? 'Di bawah minimum' : status.label;
+    const expanded = stokExpandedIds.has(a.id);
+    const mainRow = `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px">
+          ${a.hasVarian ? `<button class="stok-expand-toggle ${expanded ? 'open' : ''}" onclick="toggleStokVarianRow('${a.id}')" title="Lihat detail varian">▶</button>` : ''}
           ${a.foto ? `<img src="${a.foto}" style="width:36px;height:36px;border-radius:8px;object-fit:cover">` : '<div style="width:36px;height:36px;border-radius:8px;background:var(--mint);display:flex;align-items:center;justify-content:center;font-size:16px">🦺</div>'}
-          <strong>${a.nama}</strong>
+          <strong>${a.nama}</strong>${a.hasVarian ? ' <span class="badge badge-info" style="font-size:9px">Varian</span>' : ''}
         </div>
       </td>
       <td>${a.kategori}</td>
       <td>${a.satuan}</td>
       <td><strong style="font-size:16px">${a.stok}</strong></td>
-      <td>${a.stokMin}</td>
-      <td><span class="badge ${stokStatus}">${stokLabel}</span></td>
+      <td>${a.hasVarian ? '<span style="color:var(--text-muted)">per varian</span>' : a.stokMin}</td>
+      <td><span class="badge ${status.cls}">${stokLabel}</span></td>
       <td>
-        <button class="btn btn-outline btn-sm" onclick="editAPD('${a.id}');closeModal('modal-adj-stok')">✏️ Edit APD</button>
+        ${a.hasVarian
+          ? `<button class="btn btn-outline btn-sm" onclick="editAPD('${a.id}')">✏️ Edit APD</button>`
+          : `<button class="btn btn-outline btn-sm" onclick="editAPD('${a.id}')">✏️ Edit APD</button>`}
       </td>
     </tr>`;
+    if (!a.hasVarian || !expanded) return mainRow;
+    const detailRow = `<tr class="variant-stok-detail-row"><td colspan="7">
+      <table class="variant-stok-table"><tbody>
+        ${(a.varianList||[]).map(v => {
+          const vCls = (Number(v.stok)||0) <= 0 ? 'badge-kritis' : (Number(v.stok)||0) <= (Number(v.stokMin)||0) ? 'badge-perhatian' : 'badge-aman';
+          const vLabel = (Number(v.stok)||0) <= 0 ? 'Habis' : (Number(v.stok)||0) <= (Number(v.stokMin)||0) ? 'Di bawah minimum' : 'Aman';
+          return `<tr>
+            <td style="font-weight:600">${varianRowLabel(v)}</td>
+            <td>Stok: <strong>${v.stok}</strong> ${a.satuan}</td>
+            <td>Min: ${v.stokMin}</td>
+            <td><span class="badge ${vCls}">${vLabel}</span></td>
+            <td style="text-align:right"><button class="btn btn-outline btn-sm" onclick="openAdjustForVariant('${a.id}','${v.id}')">± Adjust</button></td>
+          </tr>`;
+        }).join('') || '<tr><td colspan="5" style="color:var(--text-muted)">Belum ada varian.</td></tr>'}
+      </tbody></table>
+    </td></tr>`;
+    return mainRow + detailRow;
   }).join('');
   renderSortIndicators('stok', '#page-apd-stok thead');
 }
@@ -3647,6 +4024,20 @@ async function exportRencanaImage() {
 function populateTerimaModal() {
   document.getElementById('trm-apd-id').innerHTML = db.apd.map(a => `<option value="${a.id}">${a.nama} (stok: ${a.stok})</option>`).join('');
   document.getElementById('trm-tgl').value = new Date().toISOString().split('T')[0];
+  onTrmApdChange();
+}
+
+function onTrmApdChange() {
+  const apd = getApdById(document.getElementById('trm-apd-id').value);
+  const group = document.getElementById('trm-varian-group');
+  const sel = document.getElementById('trm-varian-id');
+  if (apd && apd.hasVarian) {
+    group.style.display = 'flex';
+    sel.innerHTML = (apd.varianList||[]).map(v => `<option value="${v.id}">${varianRowLabel(v)} (stok: ${v.stok})</option>`).join('');
+  } else {
+    group.style.display = 'none';
+    sel.innerHTML = '';
+  }
 }
 
 function saveTerima() {
@@ -3656,10 +4047,18 @@ function saveTerima() {
   const catatan = document.getElementById('trm-catatan').value;
   if (!apdId || qty <= 0) return showToast('Mohon isi APD dan jumlah!', 'error');
   const a = getApdById(apdId);
-  db.terima.push({ id: genId(), apdId, namaApd: a?.nama, satuan: a?.satuan, tgl, qty, catatan });
-  // Update stok
-  const idx = db.apd.findIndex(x => x.id === apdId);
-  if (idx >= 0) db.apd[idx].stok += qty;
+  let varianId = null, varianLabel = '';
+  if (a && a.hasVarian) {
+    varianId = document.getElementById('trm-varian-id').value;
+    const v = getVarianById(a, varianId);
+    if (!v) return showToast('Pilih varian yang diterima!', 'error');
+    v.stok += qty;
+    varianLabel = varianRowLabel(v);
+    syncApdStokFromVarian(a);
+  } else if (a) {
+    a.stok += qty;
+  }
+  db.terima.push({ id: genId(), apdId, namaApd: a?.nama, varianId, varianLabel, satuan: a?.satuan, tgl, qty, catatan });
   saveDB();
   closeModal('modal-terima');
   ['trm-qty','trm-catatan'].forEach(id => document.getElementById(id).value = '');
@@ -3680,7 +4079,7 @@ function renderTerima() {
   });
   tbody.innerHTML = sorted.map(t => `<tr>
     <td>${t.tgl}</td>
-    <td><strong>${t.namaApd}</strong></td>
+    <td><strong>${t.namaApd}</strong>${t.varianLabel ? `<div style="font-size:11px;color:var(--text-muted)">Varian: ${t.varianLabel}</div>` : ''}</td>
     <td><strong style="color:var(--success)">${t.qty}</strong></td>
     <td>${t.satuan}</td>
     <td style="max-width:160px;word-break:break-word;color:var(--text-muted);font-size:12px">${t.catatan||'-'}</td>
@@ -4085,6 +4484,7 @@ function detailTerima(id) {
   if (!t) return;
   document.getElementById('detail-terima-content').innerHTML =
     detailRow('Nama APD', `<strong>${t.namaApd}</strong>`) +
+    (t.varianLabel ? detailRow('Varian', t.varianLabel) : '') +
     detailRow('Tanggal Terima', t.tgl) +
     detailRow('Qty Diterima', `<strong style="color:var(--success);font-size:16px">${t.qty} ${t.satuan||''}</strong>`) +
     detailRow('Catatan', t.catatan);
@@ -4095,7 +4495,8 @@ function editTerima(id) {
   const t = db.terima.find(x => x.id === id);
   if (!t) return;
   document.getElementById('etrm-id').value = id;
-  document.getElementById('etrm-nama').value = t.namaApd;
+  document.getElementById('etrm-varian-id').value = t.varianId || '';
+  document.getElementById('etrm-nama').value = t.namaApd + (t.varianLabel ? ` — ${t.varianLabel}` : '');
   document.getElementById('etrm-tgl').value = t.tgl;
   document.getElementById('etrm-qty').value = t.qty;
   document.getElementById('etrm-catatan').value = t.catatan||'';
@@ -4111,9 +4512,17 @@ function saveEditTerima() {
   const tgl = document.getElementById('etrm-tgl').value;
   if (!newQty || !tgl) return showToast('Mohon isi semua field wajib!', 'error');
   const diff = newQty - oldQty;
-  // Adjust stok APD
-  const apdIdx = db.apd.findIndex(a => a.id === db.terima[idx].apdId);
-  if (apdIdx >= 0) db.apd[apdIdx].stok += diff;
+  // Adjust stok APD (per varian bila ada, atau langsung bila tidak)
+  const apd = getApdById(db.terima[idx].apdId);
+  if (apd) {
+    const varianId = db.terima[idx].varianId;
+    if (apd.hasVarian && varianId) {
+      const v = getVarianById(apd, varianId);
+      if (v) { v.stok += diff; syncApdStokFromVarian(apd); }
+    } else {
+      apd.stok += diff;
+    }
+  }
   db.terima[idx] = { ...db.terima[idx], tgl, qty: newQty, catatan: document.getElementById('etrm-catatan').value };
   saveDB();
   closeModal('modal-edit-terima');
@@ -4287,18 +4696,43 @@ function populateKeluarModal() {
   document.getElementById('klr-tgl').value = new Date().toISOString().split('T')[0];
   document.getElementById('klr-qty').value = '';
   document.getElementById('klr-ket').value = '';
+  onKlrApdChange();
+}
+
+function onKlrApdChange() {
+  const apd = getApdById(document.getElementById('klr-apd-id').value);
+  const group = document.getElementById('klr-varian-group');
+  const sel = document.getElementById('klr-varian-id');
+  if (apd && apd.hasVarian) {
+    group.style.display = 'flex';
+    sel.innerHTML = (apd.varianList||[]).map(v => `<option value="${v.id}">${varianRowLabel(v)} (stok: ${v.stok})</option>`).join('');
+  } else {
+    group.style.display = 'none';
+    sel.innerHTML = '';
+  }
   updateKeluarStokInfo();
 }
 
+// Mengembalikan { stok, stokMin } dari sumber yang relevan: varian terpilih, atau APD langsung
+function getKlrStokSource() {
+  const apd = getApdById(document.getElementById('klr-apd-id').value);
+  if (!apd) return null;
+  if (apd.hasVarian) {
+    const v = getVarianById(apd, document.getElementById('klr-varian-id').value);
+    if (!v) return null;
+    return { apd, variant: v, stok: v.stok, stokMin: v.stokMin, satuan: apd.satuan };
+  }
+  return { apd, variant: null, stok: apd.stok, stokMin: apd.stokMin, satuan: apd.satuan };
+}
+
 function updateKeluarStokInfo() {
-  const apdId = document.getElementById('klr-apd-id').value;
-  const qty   = Number(document.getElementById('klr-qty').value) || 0;
-  const apd   = getApdById(apdId);
-  const info  = document.getElementById('klr-stok-info');
-  if (!apd) { info.textContent = ''; return; }
-  const sisaStok = apd.stok - qty;
-  const warna = sisaStok < 0 ? 'var(--danger)' : sisaStok <= apd.stokMin ? 'var(--gold)' : 'var(--success)';
-  info.innerHTML = `Stok saat ini: <strong>${apd.stok} ${apd.satuan}</strong> &nbsp;→&nbsp; Setelah keluar: <strong style="color:${warna}">${sisaStok} ${apd.satuan}</strong>${sisaStok < 0 ? ' <span style="color:var(--danger)">⚠️ Melebihi stok!</span>' : ''}`;
+  const qty  = Number(document.getElementById('klr-qty').value) || 0;
+  const src  = getKlrStokSource();
+  const info = document.getElementById('klr-stok-info');
+  if (!src) { info.textContent = ''; return; }
+  const sisaStok = src.stok - qty;
+  const warna = sisaStok < 0 ? 'var(--danger)' : sisaStok <= src.stokMin ? 'var(--gold)' : 'var(--success)';
+  info.innerHTML = `Stok saat ini: <strong>${src.stok} ${src.satuan}</strong> &nbsp;→&nbsp; Setelah keluar: <strong style="color:${warna}">${sisaStok} ${src.satuan}</strong>${sisaStok < 0 ? ' <span style="color:var(--danger)">⚠️ Melebihi stok!</span>' : ''}`;
 }
 
 function saveKeluar() {
@@ -4308,12 +4742,25 @@ function saveKeluar() {
   const ket    = document.getElementById('klr-ket').value;
   if (!apdId || !tgl || qty <= 0) return showToast('Mohon isi APD, tanggal, dan jumlah yang valid!', 'error');
   const apd = getApdById(apdId);
-  if (apd.stok - qty < 0) {
+  let varianId = null, varianLabel = '';
+  let sumberStok = apd.stok;
+  if (apd.hasVarian) {
+    varianId = document.getElementById('klr-varian-id').value;
+    const v = getVarianById(apd, varianId);
+    if (!v) return showToast('Pilih varian yang dikeluarkan!', 'error');
+    varianLabel = varianRowLabel(v);
+    sumberStok = v.stok;
+  }
+  if (sumberStok - qty < 0) {
     if (!confirm('Stok akan menjadi negatif. Lanjutkan?')) return;
   }
-  db.keluar.push({ id: genId(), apdId, namaApd: apd?.nama, satuan: apd?.satuan, tgl, qty, ket });
-  const idx = db.apd.findIndex(a => a.id === apdId);
-  if (idx >= 0) db.apd[idx].stok -= qty;
+  db.keluar.push({ id: genId(), apdId, namaApd: apd?.nama, varianId, varianLabel, satuan: apd?.satuan, tgl, qty, ket });
+  if (apd.hasVarian) {
+    const v = getVarianById(apd, varianId);
+    if (v) { v.stok -= qty; syncApdStokFromVarian(apd); }
+  } else {
+    apd.stok -= qty;
+  }
   saveDB();
   closeModal('modal-keluar');
   renderKeluar();
@@ -4333,7 +4780,8 @@ function editKeluar(id) {
   const k = db.keluar.find(x => x.id === id);
   if (!k) return;
   document.getElementById('eklr-id').value = id;
-  document.getElementById('eklr-nama').value = k.namaApd;
+  document.getElementById('eklr-varian-id').value = k.varianId || '';
+  document.getElementById('eklr-nama').value = k.namaApd + (k.varianLabel ? ` — ${k.varianLabel}` : '');
   document.getElementById('eklr-tgl').value = k.tgl;
   document.getElementById('eklr-qty').value = k.qty;
   document.getElementById('eklr-ket').value = k.ket || '';
@@ -4349,8 +4797,16 @@ function saveEditKeluar() {
   const tgl    = document.getElementById('eklr-tgl').value;
   if (!newQty || !tgl) return showToast('Mohon isi semua field wajib!', 'error');
   const diff = newQty - oldQty; // selisih pengeluaran
-  const apdIdx = db.apd.findIndex(a => a.id === db.keluar[idx].apdId);
-  if (apdIdx >= 0) db.apd[apdIdx].stok -= diff;
+  const apd = getApdById(db.keluar[idx].apdId);
+  if (apd) {
+    const varianId = db.keluar[idx].varianId;
+    if (apd.hasVarian && varianId) {
+      const v = getVarianById(apd, varianId);
+      if (v) { v.stok -= diff; syncApdStokFromVarian(apd); }
+    } else {
+      apd.stok -= diff;
+    }
+  }
   db.keluar[idx] = { ...db.keluar[idx], tgl, qty: newQty, ket: document.getElementById('eklr-ket').value };
   saveDB();
   closeModal('modal-edit-keluar');
@@ -4363,11 +4819,13 @@ function detailKeluar(id) {
   const k = db.keluar.find(x => x.id === id);
   if (!k) return;
   const apd = getApdById(k.apdId);
+  const variant = apd && k.varianId ? getVarianById(apd, k.varianId) : null;
   document.getElementById('detail-keluar-content').innerHTML =
     detailRow('Nama APD', `<strong>${k.namaApd}</strong>`) +
+    (k.varianLabel ? detailRow('Varian', k.varianLabel) : '') +
     detailRow('Tanggal Keluar', k.tgl) +
     detailRow('Qty Keluar', `<strong style="color:var(--danger);font-size:16px">${k.qty} ${k.satuan||''}</strong>`) +
-    detailRow('Stok Saat Ini', apd ? `${apd.stok} ${apd.satuan}` : '-') +
+    detailRow('Stok Saat Ini', apd ? `${variant ? variant.stok : apd.stok} ${apd.satuan}` : '-') +
     detailRow('Penerima / Keterangan', k.ket || '-');
   openModal('modal-detail-keluar');
 }
@@ -4386,7 +4844,7 @@ function renderKeluar() {
   });
   tbody.innerHTML = sorted.map(k => `<tr>
     <td>${k.tgl}</td>
-    <td><strong>${k.namaApd}</strong></td>
+    <td><strong>${k.namaApd}</strong>${k.varianLabel ? `<div style="font-size:11px;color:var(--text-muted)">Varian: ${k.varianLabel}</div>` : ''}</td>
     <td><strong style="color:var(--danger)">${k.qty}</strong></td>
     <td>${k.satuan||'-'}</td>
     <td style="max-width:180px;word-break:break-word;color:var(--text-muted);font-size:12px">${k.ket||'-'}</td>
@@ -5219,6 +5677,12 @@ async function doRestore() {
     if (!db.roles || !db.roles.length) {
       db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
     }
+    db.apd.forEach(a => {
+      if (a.hasVarian === undefined) a.hasVarian = false;
+      if (!Array.isArray(a.varianAtribut)) a.varianAtribut = [];
+      if (!Array.isArray(a.varianList)) a.varianList = [];
+      if (a.varianCustomLabel === undefined) a.varianCustomLabel = '';
+    });
     await saveDB();
 
     _restoreData = null;
