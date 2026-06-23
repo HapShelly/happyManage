@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -882,6 +881,11 @@
       <span class="nav-icon">💰</span> Biaya Operasional
     </div>
 
+    <div class="nav-label">SDM</div>
+    <div class="nav-item" onclick="showPage('karyawan', this)">
+      <span class="nav-icon">👷</span> Master Data Karyawan
+    </div>
+
     <div class="nav-label">Sistem</div>
     <div class="nav-item" onclick="showPage('backup-restore', this)">
       <span class="nav-icon">💾</span> Backup & Restore
@@ -1412,6 +1416,196 @@
             <h3 style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Belum ada biaya operasional</h3>
             <p style="font-size:13px">Klik "+ Tambah Biaya" untuk mulai mencatat.</p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KARYAWAN PAGE -->
+    <div id="page-karyawan" class="page">
+      <div class="page-header">
+        <div>
+          <h1>&#128119; Master Data Karyawan</h1>
+          <p>Kelola data karyawan PO Blanket Manpower TPPI</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline" onclick="exportKaryawanPDF()">&#128196; Export PDF</button>
+          <button class="btn btn-outline" onclick="exportKaryawanExcel()">&#128202; Export Excel</button>
+          <button class="btn btn-primary" onclick="openKaryawanModal()">&#65291; Tambah Karyawan</button>
+        </div>
+      </div>
+      <!-- FILTER BAR -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body" style="padding:16px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label>Cari Nama / KTP</label>
+              <input type="text" id="filter-karyawan-nama" placeholder="Ketik nama atau no. KTP..." oninput="renderKaryawan()">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Departemen</label>
+              <select id="filter-karyawan-dept" onchange="renderKaryawan()">
+                <option value="">Semua Departemen</option>
+                <option>Maintenance</option>
+                <option>Project Execution</option>
+                <option>HSSE</option>
+                <option>Procurement</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Jabatan</label>
+              <input type="text" id="filter-karyawan-jabatan" placeholder="Cari jabatan..." oninput="renderKaryawan()">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Status</label>
+              <select id="filter-karyawan-status" onchange="renderKaryawan()">
+                <option value="">Semua Status</option>
+                <option value="Aktif">Aktif</option>
+                <option value="Resign">Resign</option>
+              </select>
+            </div>
+            <button class="btn btn-outline" onclick="resetFilterKaryawan()" style="white-space:nowrap">Reset</button>
+          </div>
+        </div>
+      </div>
+      <!-- STAT CARDS -->
+      <div class="grid-4" id="karyawan-stats" style="margin-bottom:20px"></div>
+      <!-- TABLE -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:40px">No</th>
+                  <th data-sort-key="nama" onclick="toggleSort('karyawan','nama',renderKaryawan)">Nama <span class="sort-icon">&#8645;</span></th>
+                  <th>Tempat, Tgl Lahir</th>
+                  <th>No. KTP</th>
+                  <th>No. HP</th>
+                  <th data-sort-key="departemen" onclick="toggleSort('karyawan','departemen',renderKaryawan)">Departemen <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="jabatan" onclick="toggleSort('karyawan','jabatan',renderKaryawan)">Jabatan <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="tglMasuk" onclick="toggleSort('karyawan','tglMasuk',renderKaryawan)">Tgl Masuk <span class="sort-icon">&#8645;</span></th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-karyawan-body"></tbody>
+            </table>
+          </div>
+          <div id="karyawan-pagination" style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TAMBAH/EDIT KARYAWAN -->
+    <div class="modal-overlay" id="modal-karyawan">
+      <div class="modal" style="max-width:680px">
+        <div class="modal-header">
+          <div class="modal-title" id="modal-karyawan-title">Tambah Karyawan</div>
+          <button class="btn-close" onclick="closeModal('modal-karyawan')">&#10005;</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="k-id">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Nama Lengkap *</label>
+              <input type="text" id="k-nama" placeholder="Nama lengkap karyawan">
+            </div>
+            <div class="form-group">
+              <label>Tempat Lahir</label>
+              <input type="text" id="k-tempat-lahir" placeholder="Kota tempat lahir">
+            </div>
+            <div class="form-group">
+              <label>Tanggal Lahir</label>
+              <input type="date" id="k-tgl-lahir">
+            </div>
+            <div class="form-group full">
+              <label>Alamat</label>
+              <textarea id="k-alamat" placeholder="Alamat lengkap" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Jenis Kelamin</label>
+              <select id="k-jk">
+                <option value="L">Laki-laki (L)</option>
+                <option value="P">Perempuan (P)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Agama</label>
+              <select id="k-agama">
+                <option>Islam</option>
+                <option>Kristen</option>
+                <option>Katolik</option>
+                <option>Hindu</option>
+                <option>Buddha</option>
+                <option>Konghucu</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>No. KTP (NIK)</label>
+              <input type="text" id="k-ktp" placeholder="16 digit NIK">
+            </div>
+            <div class="form-group">
+              <label>No. HP</label>
+              <input type="text" id="k-hp" placeholder="08xxxxxxxxxx">
+            </div>
+            <div class="form-group">
+              <label>Departemen *</label>
+              <select id="k-departemen">
+                <option>Maintenance</option>
+                <option>Project Execution</option>
+                <option>HSSE</option>
+                <option>Procurement</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Jabatan *</label>
+              <input type="text" id="k-jabatan" placeholder="Cth: Helper Rotating, Fitter Project...">
+            </div>
+            <div class="form-group">
+              <label>No. Rekening</label>
+              <input type="text" id="k-rekening" placeholder="Nomor rekening bank">
+            </div>
+            <div class="form-group">
+              <label>Nama Bank</label>
+              <input type="text" id="k-bank" placeholder="BNI / Mandiri / BRI / ...">
+            </div>
+            <div class="form-group">
+              <label>Tanggal Masuk *</label>
+              <input type="date" id="k-tgl-masuk">
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select id="k-status">
+                <option value="Aktif">Aktif</option>
+                <option value="Resign">Resign</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label>Keterangan</label>
+              <input type="text" id="k-keterangan" placeholder="Catatan tambahan (opsional)">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-karyawan')">Batal</button>
+          <button class="btn btn-primary" onclick="saveKaryawan()">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL HAPUS KARYAWAN -->
+    <div class="modal-overlay" id="modal-hapus-karyawan">
+      <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+          <div class="modal-title">Hapus Karyawan</div>
+          <button class="btn-close" onclick="closeModal('modal-hapus-karyawan')">&#10005;</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:14px;color:var(--text)">Yakin ingin menghapus data karyawan <strong id="hapus-karyawan-nama"></strong>? Tindakan ini tidak dapat dibatalkan.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-hapus-karyawan')">Batal</button>
+          <button class="btn btn-danger" onclick="confirmHapusKaryawan()">Hapus</button>
         </div>
       </div>
     </div>
@@ -2294,7 +2488,8 @@ let db = {
   keluar: [],
   jcn: [],
   operasional: [],
-  roles: ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping']
+  roles: ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'],
+  karyawan: []
 };
 
 // Load from localStorage
@@ -2363,7 +2558,7 @@ async function loadDB() {
     if (saved) { try { db = JSON.parse(saved); } catch (e2) {} }
   }
   // Ensure all arrays exist
-  ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional'].forEach(k => { if(!db[k]) db[k] = []; });
+  ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional','karyawan'].forEach(k => { if(!db[k]) db[k] = []; });
   if (!db.roles || !db.roles.length) {
     db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
   }
@@ -2411,7 +2606,8 @@ const pageTitles = {
   'apd-keluar': 'Pengeluaran Barang',
   'jcn-master': 'Master Data No. JCN',
   'operasional': 'Biaya Operasional',
-  'backup-restore': 'Backup & Restore'
+  'backup-restore': 'Backup & Restore',
+  'karyawan': 'Master Data Karyawan'
 };
 
 function showPage(id, el) {
@@ -2509,6 +2705,7 @@ function renderPage(id) {
   else if (id === 'jcn-master') { populateJCNPoSelect(); renderJCN(); }
   else if (id === 'operasional') renderOperasional();
   else if (id === 'backup-restore') renderBackupRestore();
+  else if (id === 'karyawan') renderKaryawan();
 }
 
 // ════════════════ MODAL ════════════════
@@ -2662,6 +2859,7 @@ const sortState = {
   'keluar':      { key: null, dir: 1 },
   'jcn':         { key: null, dir: 1 },
   'operasional': { key: null, dir: 1 },
+  'karyawan':    { key: null, dir: 1 },
 };
 
 // Comparator universal: deteksi otomatis apakah nilai numerik, tanggal (YYYY-MM-DD), atau teks
@@ -5622,6 +5820,7 @@ function showRestorePreview(filename, parsed, fileSize) {
     { label: 'Pengeluaran',    count: (d.keluar||[]).length },
     { label: 'Rencana Beli',   count: (d.rencana||[]).length },
     { label: 'Biaya Ops',      count: (d.operasional||[]).length },
+    { label: 'Karyawan',       count: (d.karyawan||[]).length },
   ];
   const total = rows.reduce((a,r)=>a+r.count,0);
 
@@ -5693,6 +5892,435 @@ async function doRestore() {
   } catch(err) {
     showToast('Gagal menyimpan data restore: ' + err.message, 'error');
   }
+}
+
+// ════════════════════════════════ KARYAWAN MODULE ════════════════════════════════
+
+let _karyawanHapusId = null;
+let _karyawanPage = 1;
+const _karyawanPerPage = 20;
+
+function renderKaryawanStats() {
+  const el = document.getElementById('karyawan-stats');
+  if (!el) return;
+  const all = db.karyawan || [];
+  const aktif = all.filter(k => k.status !== 'Resign').length;
+  const resign = all.filter(k => k.status === 'Resign').length;
+  const depts = [...new Set(all.map(k => k.departemen).filter(Boolean))].length;
+  const jabatan = [...new Set(all.map(k => k.jabatan).filter(Boolean))].length;
+  el.innerHTML = `
+    <div class="stat-card blue"><span class="stat-icon">&#128119;</span><div class="stat-label">Total Karyawan</div><div class="stat-value">${all.length}</div><div class="stat-sub">Semua record</div></div>
+    <div class="stat-card green"><span class="stat-icon">&#9989;</span><div class="stat-label">Karyawan Aktif</div><div class="stat-value">${aktif}</div><div class="stat-sub">Sedang bertugas</div></div>
+    <div class="stat-card red"><span class="stat-icon">&#128683;</span><div class="stat-label">Resign</div><div class="stat-value">${resign}</div><div class="stat-sub">Sudah keluar</div></div>
+    <div class="stat-card gold"><span class="stat-icon">&#127970;</span><div class="stat-label">Departemen</div><div class="stat-value">${depts}</div><div class="stat-sub">${jabatan} jabatan berbeda</div></div>
+  `;
+}
+
+function getFilteredKaryawan() {
+  let data = [...(db.karyawan || [])];
+  const q = (document.getElementById('filter-karyawan-nama')?.value || '').toLowerCase();
+  const dept = document.getElementById('filter-karyawan-dept')?.value || '';
+  const jab = (document.getElementById('filter-karyawan-jabatan')?.value || '').toLowerCase();
+  const status = document.getElementById('filter-karyawan-status')?.value || '';
+  if (q) data = data.filter(k => (k.nama||'').toLowerCase().includes(q) || (k.ktp||'').includes(q));
+  if (dept) data = data.filter(k => k.departemen === dept);
+  if (jab) data = data.filter(k => (k.jabatan||'').toLowerCase().includes(jab));
+  if (status) data = data.filter(k => k.status === status);
+  // Sort using global sortState
+  const st = sortState['karyawan'];
+  if (st && st.key) {
+    data = applySort('karyawan', data, {
+      nama: k => k.nama||'',
+      departemen: k => k.departemen||'',
+      jabatan: k => k.jabatan||'',
+      tglMasuk: k => k.tglMasuk||'',
+    });
+  }
+  return data;
+}
+
+function renderKaryawan() {
+  renderKaryawanStats();
+  renderSortIndicators('karyawan', '#page-karyawan thead');
+  const data = getFilteredKaryawan();
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / _karyawanPerPage));
+  if (_karyawanPage > totalPages) _karyawanPage = totalPages;
+  const paged = data.slice((_karyawanPage-1)*_karyawanPerPage, _karyawanPage*_karyawanPerPage);
+
+  const tbody = document.getElementById('tbl-karyawan-body');
+  if (!tbody) return;
+  if (!paged.length) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data karyawan. Klik "+ Tambah Karyawan" untuk mulai.</td></tr>`;
+  } else {
+    tbody.innerHTML = paged.map((k, i) => {
+      const no = (_karyawanPage-1)*_karyawanPerPage + i + 1;
+      const ttl = [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ');
+      const statusBadge = k.status === 'Resign'
+        ? '<span class="badge badge-red">Resign</span>'
+        : '<span class="badge badge-green">Aktif</span>';
+      return `<tr>
+        <td style="color:var(--text-muted);font-size:12px">${no}</td>
+        <td style="font-weight:600">${esc(k.nama)}</td>
+        <td style="font-size:12px">${esc(ttl)}</td>
+        <td style="font-family:monospace;font-size:12px">${esc(k.ktp||'-')}</td>
+        <td style="font-size:12px">${esc(k.hp||'-')}</td>
+        <td><span class="badge badge-blue">${esc(k.departemen||'-')}</span></td>
+        <td style="font-size:12px">${esc(k.jabatan||'-')}</td>
+        <td style="font-size:12px">${k.tglMasuk ? formatTanggalID(k.tglMasuk) : '-'}</td>
+        <td>${statusBadge}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="editKaryawan('${k.id}')">Edit</button>
+            <button class="btn btn-sm" style="background:var(--danger-light);color:var(--danger);border:none" onclick="hapusKaryawan('${k.id}')">Hapus</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Pagination
+  const pg = document.getElementById('karyawan-pagination');
+  if (!pg) return;
+  const start = total === 0 ? 0 : (_karyawanPage-1)*_karyawanPerPage+1;
+  const end = Math.min(_karyawanPage*_karyawanPerPage, total);
+  pg.innerHTML = `
+    <span style="font-size:13px;color:var(--text-muted)">Menampilkan ${start}–${end} dari ${total} record</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="karyawanGoPage(${_karyawanPage-1})" ${_karyawanPage<=1?'disabled':''}>&#8249; Prev</button>
+      <span style="font-size:13px;padding:5px 10px;background:var(--bg);border-radius:var(--radius-sm)">Hal. ${_karyawanPage}/${totalPages}</span>
+      <button class="btn btn-outline btn-sm" onclick="karyawanGoPage(${_karyawanPage+1})" ${_karyawanPage>=totalPages?'disabled':''}>Next &#8250;</button>
+    </div>
+  `;
+}
+
+function karyawanGoPage(p) {
+  _karyawanPage = p;
+  renderKaryawan();
+}
+
+function resetFilterKaryawan() {
+  document.getElementById('filter-karyawan-nama').value = '';
+  document.getElementById('filter-karyawan-dept').value = '';
+  document.getElementById('filter-karyawan-jabatan').value = '';
+  document.getElementById('filter-karyawan-status').value = '';
+  _karyawanPage = 1;
+  renderKaryawan();
+}
+
+function openKaryawanModal(id) {
+  document.getElementById('k-id').value = '';
+  document.getElementById('k-nama').value = '';
+  document.getElementById('k-tempat-lahir').value = '';
+  document.getElementById('k-tgl-lahir').value = '';
+  document.getElementById('k-alamat').value = '';
+  document.getElementById('k-jk').value = 'L';
+  document.getElementById('k-agama').value = 'Islam';
+  document.getElementById('k-ktp').value = '';
+  document.getElementById('k-hp').value = '';
+  document.getElementById('k-departemen').value = 'Maintenance';
+  document.getElementById('k-jabatan').value = '';
+  document.getElementById('k-rekening').value = '';
+  document.getElementById('k-bank').value = '';
+  document.getElementById('k-tgl-masuk').value = '';
+  document.getElementById('k-status').value = 'Aktif';
+  document.getElementById('k-keterangan').value = '';
+  document.getElementById('modal-karyawan-title').textContent = 'Tambah Karyawan';
+  openModal('modal-karyawan');
+}
+
+function editKaryawan(id) {
+  const k = (db.karyawan||[]).find(x => x.id === id);
+  if (!k) return;
+  document.getElementById('k-id').value = k.id;
+  document.getElementById('k-nama').value = k.nama||'';
+  document.getElementById('k-tempat-lahir').value = k.tempatLahir||'';
+  document.getElementById('k-tgl-lahir').value = k.tglLahir||'';
+  document.getElementById('k-alamat').value = k.alamat||'';
+  document.getElementById('k-jk').value = k.jk||'L';
+  document.getElementById('k-agama').value = k.agama||'Islam';
+  document.getElementById('k-ktp').value = k.ktp||'';
+  document.getElementById('k-hp').value = k.hp||'';
+  document.getElementById('k-departemen').value = k.departemen||'Maintenance';
+  document.getElementById('k-jabatan').value = k.jabatan||'';
+  document.getElementById('k-rekening').value = k.rekening||'';
+  document.getElementById('k-bank').value = k.bank||'';
+  document.getElementById('k-tgl-masuk').value = k.tglMasuk||'';
+  document.getElementById('k-status').value = k.status||'Aktif';
+  document.getElementById('k-keterangan').value = k.keterangan||'';
+  document.getElementById('modal-karyawan-title').textContent = 'Edit Karyawan';
+  openModal('modal-karyawan');
+}
+
+function saveKaryawan() {
+  const nama = document.getElementById('k-nama').value.trim();
+  const jabatan = document.getElementById('k-jabatan').value.trim();
+  const tglMasuk = document.getElementById('k-tgl-masuk').value;
+  if (!nama) { showToast('Nama karyawan wajib diisi.', 'error'); return; }
+  if (!jabatan) { showToast('Jabatan wajib diisi.', 'error'); return; }
+  if (!tglMasuk) { showToast('Tanggal masuk wajib diisi.', 'error'); return; }
+
+  const id = document.getElementById('k-id').value;
+  const data = {
+    id: id || genId(),
+    nama,
+    tempatLahir: document.getElementById('k-tempat-lahir').value.trim(),
+    tglLahir: document.getElementById('k-tgl-lahir').value,
+    alamat: document.getElementById('k-alamat').value.trim(),
+    jk: document.getElementById('k-jk').value,
+    agama: document.getElementById('k-agama').value,
+    ktp: document.getElementById('k-ktp').value.trim(),
+    hp: document.getElementById('k-hp').value.trim(),
+    departemen: document.getElementById('k-departemen').value,
+    jabatan,
+    rekening: document.getElementById('k-rekening').value.trim(),
+    bank: document.getElementById('k-bank').value.trim(),
+    tglMasuk,
+    status: document.getElementById('k-status').value,
+    keterangan: document.getElementById('k-keterangan').value.trim(),
+  };
+
+  if (!db.karyawan) db.karyawan = [];
+  if (id) {
+    const idx = db.karyawan.findIndex(k => k.id === id);
+    if (idx >= 0) db.karyawan[idx] = data;
+  } else {
+    db.karyawan.push(data);
+  }
+  saveDB();
+  closeModal('modal-karyawan');
+  renderKaryawan();
+  showToast(id ? 'Data karyawan berhasil diperbarui.' : 'Karyawan baru berhasil ditambahkan.', 'success');
+}
+
+function hapusKaryawan(id) {
+  const k = (db.karyawan||[]).find(x => x.id === id);
+  if (!k) return;
+  _karyawanHapusId = id;
+  document.getElementById('hapus-karyawan-nama').textContent = k.nama;
+  openModal('modal-hapus-karyawan');
+}
+
+function confirmHapusKaryawan() {
+  if (!_karyawanHapusId) return;
+  db.karyawan = (db.karyawan||[]).filter(k => k.id !== _karyawanHapusId);
+  _karyawanHapusId = null;
+  saveDB();
+  closeModal('modal-hapus-karyawan');
+  renderKaryawan();
+  showToast('Data karyawan berhasil dihapus.', 'info');
+}
+
+// ── Helpers ──
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatTanggalID(dateStr) {
+  if (!dateStr) return '';
+  const bulan = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return dateStr;
+  return `${d.getDate()} ${bulan[d.getMonth()+1]} ${d.getFullYear()}`;
+}
+
+// ════════════════ EXPORT EXCEL (format sesuai template) ════════════════
+async function exportKaryawanExcel() {
+  // Dynamically load SheetJS
+  if (typeof XLSX === 'undefined') {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  const all = db.karyawan || [];
+  if (!all.length) { showToast('Tidak ada data karyawan untuk diekspor.', 'warn'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  const depts = ['Maintenance','Project Execution','HSSE','Procurement'];
+  depts.forEach(dept => {
+    const deptData = all.filter(k => k.departemen === dept);
+    if (!deptData.length) return;
+
+    // Group by jabatan
+    const jabatanGroups = {};
+    deptData.forEach(k => {
+      const jab = (k.jabatan||'LAINNYA').toUpperCase();
+      if (!jabatanGroups[jab]) jabatanGroups[jab] = [];
+      jabatanGroups[jab].push(k);
+    });
+
+    const rows = [];
+    // Title
+    rows.push([`PO BLANKET MANPOWER TPPI ${dept.toUpperCase()}`, '', '', '', '', '', '', '', '', '']);
+    rows.push(['']);
+
+    let globalNo = 1;
+    Object.entries(jabatanGroups).forEach(([jab, karyawans]) => {
+      rows.push([jab.toUpperCase(), '', '', '', '', '', '', '', '', '']);
+      // Determine header based on dept (Project/HSSE have rekening+bank)
+      const hasRekening = dept !== 'Maintenance';
+      if (hasRekening) {
+        rows.push(['NO', 'NAMA', 'TEMPAT, TANGGAL LAHIR', 'ALAMAT', 'JENIS KELAMIN', 'AGAMA', 'NO. KTP', 'NO. HP', 'NO. REKENING', 'NAMA BANK', 'TANGGAL MASUK']);
+      } else {
+        rows.push(['NO', 'NAMA', 'TEMPAT, TANGGAL LAHIR', 'ALAMAT', 'JENIS KELAMIN', 'AGAMA', 'NO. KTP', 'NO. HP', 'TANGGAL MASUK']);
+      }
+      karyawans.forEach((k, i) => {
+        const ttl = [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ');
+        if (hasRekening) {
+          rows.push([i+1, k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.rekening||'', k.bank||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '']);
+        } else {
+          rows.push([i+1, k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '']);
+        }
+      });
+      rows.push(['']);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Styling: set column widths
+    ws['!cols'] = [
+      {wch:5}, {wch:28}, {wch:30}, {wch:55}, {wch:14}, {wch:10},
+      {wch:20}, {wch:16}, {wch:18}, {wch:12}, {wch:20}
+    ];
+
+    // Bold title rows (row 0)
+    const titleCell = ws['A1'];
+    if (titleCell) titleCell.s = { font: { bold: true, sz: 12 } };
+
+    XLSX.utils.book_append_sheet(wb, ws, dept.substring(0,31));
+  });
+
+  if (wb.SheetNames.length === 0) {
+    showToast('Tidak ada data karyawan per departemen.', 'warn'); return;
+  }
+
+  const ts = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tsStr = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}`;
+  XLSX.writeFile(wb, `DATA_PEKERJA_PO_BLANKET_MANPOWER_${tsStr}.xlsx`);
+  showToast('Export Excel berhasil diunduh!', 'success');
+}
+
+// ════════════════ EXPORT PDF ════════════════
+function exportKaryawanPDF() {
+  const all = getFilteredKaryawan();
+  if (!all.length) { showToast('Tidak ada data karyawan untuk diekspor.', 'warn'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const PAGE_W = 297, PAGE_H = 210;
+  const MARGIN = 14;
+  let y = MARGIN;
+
+  const addTitle = () => {
+    doc.setFillColor(27, 43, 75);
+    doc.rect(0, 0, PAGE_W, 18, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11); doc.setFont('helvetica','bold');
+    doc.text('DATA PEKERJA PO BLANKET MANPOWER TPPI', PAGE_W/2, 11, {align:'center'});
+    doc.setFontSize(8); doc.setFont('helvetica','normal');
+    const ts = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+    doc.text(`Per: ${ts}`, PAGE_W - MARGIN, 11, {align:'right'});
+    doc.setTextColor(30, 30, 30);
+    y = 24;
+  };
+
+  addTitle();
+
+  // Group by departemen then jabatan
+  const depts = [...new Set(all.map(k=>k.departemen).filter(Boolean))];
+  
+  depts.forEach(dept => {
+    const deptData = all.filter(k => k.departemen === dept);
+    if (!deptData.length) return;
+
+    // Dept header
+    if (y > PAGE_H - 30) { doc.addPage(); addTitle(); }
+    doc.setFillColor(74, 111, 165);
+    doc.rect(MARGIN, y, PAGE_W - 2*MARGIN, 7, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(9); doc.setFont('helvetica','bold');
+    doc.text(dept.toUpperCase(), MARGIN+3, y+5);
+    doc.setTextColor(30,30,30);
+    y += 10;
+
+    const jabatanGroups = {};
+    deptData.forEach(k => {
+      const jab = k.jabatan||'LAINNYA';
+      if (!jabatanGroups[jab]) jabatanGroups[jab] = [];
+      jabatanGroups[jab].push(k);
+    });
+
+    Object.entries(jabatanGroups).forEach(([jab, karyawans]) => {
+      if (y > PAGE_H - 20) { doc.addPage(); addTitle(); }
+      // Sub-header jabatan
+      doc.setFillColor(232, 244, 241);
+      doc.rect(MARGIN, y, PAGE_W - 2*MARGIN, 6, 'F');
+      doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.setTextColor(27,43,75);
+      doc.text(jab.toUpperCase(), MARGIN+2, y+4);
+      doc.setTextColor(30,30,30);
+      y += 8;
+
+      // Table header
+      const cols = ['No','Nama','Tempat, Tgl Lahir','Alamat','JK','Agama','No. KTP','No. HP','Tgl Masuk','Status'];
+      const cw =  [10,  38,    38,                   70,     8,  14,    26,     22,    25,     16];
+      if (y > PAGE_H - 20) { doc.addPage(); addTitle(); }
+      doc.setFillColor(228,232,240);
+      doc.rect(MARGIN, y, PAGE_W-2*MARGIN, 6, 'F');
+      doc.setFontSize(7); doc.setFont('helvetica','bold');
+      let cx = MARGIN;
+      cols.forEach((c, i) => {
+        doc.text(c, cx+1, y+4.5);
+        cx += cw[i];
+      });
+      y += 7;
+
+      karyawans.forEach((k, idx) => {
+        if (y > PAGE_H - 10) { doc.addPage(); addTitle(); }
+        const rowH = 7;
+        if (idx % 2 === 0) {
+          doc.setFillColor(248,250,253);
+          doc.rect(MARGIN, y-1, PAGE_W-2*MARGIN, rowH, 'F');
+        }
+        doc.setFont('helvetica','normal'); doc.setFontSize(7);
+        cx = MARGIN;
+        const ttl = [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ');
+        const cells = [String(idx+1), k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '', k.status||'Aktif'];
+        cells.forEach((cell, i) => {
+          const maxW = cw[i] - 2;
+          const text = doc.splitTextToSize(String(cell), maxW)[0] || '';
+          doc.text(text, cx+1, y+4);
+          cx += cw[i];
+        });
+        y += rowH;
+      });
+      y += 4;
+    });
+    y += 4;
+  });
+
+  // Page numbers
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setTextColor(150,150,150);
+    doc.text(`Halaman ${i} dari ${pageCount}`, PAGE_W/2, PAGE_H-5, {align:'center'});
+  }
+
+  const ts2 = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  doc.save(`DATA_KARYAWAN_${ts2.getFullYear()}${pad(ts2.getMonth()+1)}${pad(ts2.getDate())}.pdf`);
+  showToast('Export PDF berhasil diunduh!', 'success');
+}
+
+// Called from showPageSkeleton / showPage when rendering karyawan page
+function renderKaryawanPage() {
+  renderKaryawan();
 }
 
 </script>
