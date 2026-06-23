@@ -828,6 +828,12 @@
   padding: 10px 8px;
   font-size: 12px;
   }
+
+ #page-po-list td,
+ #page-po-list th {
+  padding: 10px 8px;
+  font-size: 12px;
+  }
  
 </style>
 </head>
@@ -1049,7 +1055,7 @@
       </div>
       <div class="card">
         <div class="card-body table-wrap">
-          <table id="tbl-po">
+          <table id="tbl-po" style="min-width:900px">
             <thead>
               <tr>
                 <th data-sort-key="noPO" onclick="toggleSort('po-list','noPO',renderPOList)">No. PO <span class="sort-icon">⇅</span></th>
