@@ -822,6 +822,20 @@
   .flex-between { display: flex; align-items: center; justify-content: space-between; }
   .flex-gap { display: flex; align-items: center; gap: 8px; }
   .full-w { grid-column: 1 / -1; }
+
+ #page-karyawan td,
+ #page-karyawan th {
+  padding: 10px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  }
+
+ #page-po-list td,
+ #page-po-list th {
+  padding: 10px 8px;
+  font-size: 12px;
+  }
+ 
 </style>
 </head>
 <body>
@@ -1042,7 +1056,7 @@
       </div>
       <div class="card">
         <div class="card-body table-wrap">
-          <table id="tbl-po">
+          <table id="tbl-po" style="min-width:900px">
             <thead>
               <tr>
                 <th data-sort-key="noPO" onclick="toggleSort('po-list','noPO',renderPOList)">No. PO <span class="sort-icon">⇅</span></th>
@@ -1194,7 +1208,7 @@
           <table>
             <thead>
               <tr>
-                <th style="width:40px">No</th>
+                <th style="width:44px;min-width:44px">No</th>
                 <th data-sort-key="date" onclick="toggleSort('jcn','date',renderJCN)">Tanggal <span class="sort-icon">⇅</span></th>
                 <th data-sort-key="no" onclick="toggleSort('jcn','no',renderJCN)">No. JCN <span class="sort-icon">⇅</span></th>
                 <th data-sort-key="desc" onclick="toggleSort('jcn','desc',renderJCN)">Uraian Pekerjaan <span class="sort-icon">⇅</span></th>
@@ -1473,7 +1487,7 @@
       <div class="card">
         <div class="card-body" style="padding:0">
           <div class="table-wrap">
-            <table>
+            <table style="min-width:900px>
               <thead>
                 <tr>
                   <th style="width:40px">No</th>
