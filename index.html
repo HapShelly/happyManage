@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -231,6 +232,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    transition: margin-left .35s cubic-bezier(.22,.61,.36,1);
   }
 
   .topbar {
@@ -427,6 +429,74 @@
   }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #FAFBFD; }
+
+  /* ── APD UKURAN — selaras dengan gaya tabel standar di halaman lain ── */
+  #page-apd-ukuran-list .table-wrap table { min-width: 1300px; }
+
+  /* ── APD UKURAN — STICKY KOLOM NAMA & AKSI ── */
+  /* Nama (kolom ke-2) menempel di kiri, Aksi (kolom terakhir) menempel di kanan saat scroll horizontal. */
+  #page-apd-ukuran-list .table-wrap { position: relative; }
+  #page-apd-ukuran-list .col-sticky-left {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+  }
+  #page-apd-ukuran-list .col-sticky-right {
+    position: sticky;
+    right: 0;
+    z-index: 5;
+  }
+  #page-apd-ukuran-list thead th.col-sticky-left,
+  #page-apd-ukuran-list thead th.col-sticky-right {
+    z-index: 11; /* di atas thead biasa (10) karena sticky di 2 sumbu sekaligus */
+    background: var(--bg);
+  }
+  #page-apd-ukuran-list tbody td.col-sticky-left,
+  #page-apd-ukuran-list tbody td.col-sticky-right {
+    background: var(--white);
+  }
+  #page-apd-ukuran-list tbody tr:nth-child(even) td.col-sticky-left,
+  #page-apd-ukuran-list tbody tr:nth-child(even) td.col-sticky-right {
+    background: var(--mint);
+  }
+  #page-apd-ukuran-list tbody tr:hover td.col-sticky-left,
+  #page-apd-ukuran-list tbody tr:hover td.col-sticky-right {
+    background: var(--gold-light);
+  }
+  /* Garis tipis pemisah supaya kelihatan ada konten yang "lewat di bawahnya" saat discroll */
+  #page-apd-ukuran-list .col-sticky-left { box-shadow: 2px 0 6px -2px rgba(27,43,75,0.18); }
+  #page-apd-ukuran-list .col-sticky-right { box-shadow: -2px 0 6px -2px rgba(27,43,75,0.18); }
+  #page-apd-ukuran-list thead th.col-sticky-left,
+  #page-apd-ukuran-list thead th.col-sticky-right { box-shadow: none; }
+
+  /* ── APD UKURAN — TOGGLE TAMPILAN PADAT / LENGKAP ── */
+  .au-view-toggle {
+    display: inline-flex;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    gap: 2px;
+  }
+  .au-view-toggle button {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .au-view-toggle button.active {
+    background: var(--navy);
+    color: var(--white);
+  }
+  .au-view-toggle button:not(.active):hover { background: var(--mint); color: var(--text); }
+  /* Saat mode padat, kolom-kolom sekunder disembunyikan baik di header maupun body */
+  #page-apd-ukuran-list.au-mode-compact .au-col-secondary { display: none; }
+  #page-apd-ukuran-list.au-mode-compact .table-wrap table { min-width: 760px; }
 
   /* ── FORM ── */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -659,9 +729,9 @@
 
   /* ── RESPONSIVE ── */
 
-  /* ── HAMBURGER BUTTON ── */
+  /* ── HAMBURGER BUTTON (selalu tampil — mobile: overlay menu, desktop: collapse sidebar) ── */
   .hamburger {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     width: 38px; height: 38px;
@@ -694,8 +764,14 @@
     pointer-events: auto; /* aktifkan tangkapan klik hanya saat overlay benar-benar tampil */
   }
 
+  /* ── SIDEBAR COLLAPSE (DESKTOP) ── */
+  body.sidebar-collapsed .sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+  body.sidebar-collapsed .main { margin-left: 0; }
+
   @media (max-width: 900px) {
-    .hamburger { display: flex; }
     .sidebar-overlay { display: block; }
     .sidebar {
       transform: translateX(-100%);
@@ -827,13 +903,6 @@
  #page-karyawan th {
   padding: 10px 8px;
   font-size: 12px;
-  white-space: nowrap;
-  }
-
- #page-po-list td,
- #page-po-list th {
-  padding: 10px 8px;
-  font-size: 12px;
   }
  
 </style>
@@ -896,8 +965,17 @@
     </div>
 
     <div class="nav-label">SDM</div>
+    <div class="nav-item" onclick="showPage('karyawan-form', this)">
+      <span class="nav-icon">➕</span> Input Karyawan
+    </div>
     <div class="nav-item" onclick="showPage('karyawan', this)">
       <span class="nav-icon">👷</span> Master Data Karyawan
+    </div>
+    <div class="nav-item" onclick="showPage('apd-ukuran-form', this)">
+      <span class="nav-icon">👕</span> Input Ukuran APD
+    </div>
+    <div class="nav-item" onclick="showPage('apd-ukuran-list', this)">
+      <span class="nav-icon">📋</span> Daftar Ukuran APD
     </div>
 
     <div class="nav-label">Sistem</div>
@@ -1056,7 +1134,7 @@
       </div>
       <div class="card">
         <div class="card-body table-wrap">
-          <table id="tbl-po" style="min-width:900px">
+          <table id="tbl-po">
             <thead>
               <tr>
                 <th data-sort-key="noPO" onclick="toggleSort('po-list','noPO',renderPOList)">No. PO <span class="sort-icon">⇅</span></th>
@@ -1208,7 +1286,7 @@
           <table>
             <thead>
               <tr>
-                <th style="width:44px;min-width:44px">No</th>
+                <th style="width:40px">No</th>
                 <th data-sort-key="date" onclick="toggleSort('jcn','date',renderJCN)">Tanggal <span class="sort-icon">⇅</span></th>
                 <th data-sort-key="no" onclick="toggleSort('jcn','no',renderJCN)">No. JCN <span class="sort-icon">⇅</span></th>
                 <th data-sort-key="desc" onclick="toggleSort('jcn','desc',renderJCN)">Uraian Pekerjaan <span class="sort-icon">⇅</span></th>
@@ -1444,7 +1522,7 @@
         <div class="page-header-actions">
           <button class="btn btn-outline" onclick="exportKaryawanPDF()">&#128196; Export PDF</button>
           <button class="btn btn-outline" onclick="exportKaryawanExcel()">&#128202; Export Excel</button>
-          <button class="btn btn-primary" onclick="openKaryawanModal()">&#65291; Tambah Karyawan</button>
+          <button class="btn btn-primary" onclick="bukaFormTambahKaryawan()">&#65291; Tambah Karyawan</button>
         </div>
       </div>
       <!-- FILTER BAR -->
@@ -1487,7 +1565,7 @@
       <div class="card">
         <div class="card-body" style="padding:0">
           <div class="table-wrap">
-            <table style="min-width:900px>
+            <table style="min-width:900px">
               <thead>
                 <tr>
                   <th style="width:40px">No</th>
@@ -1510,16 +1588,30 @@
       </div>
     </div>
 
-    <!-- MODAL TAMBAH/EDIT KARYAWAN -->
-    <div class="modal-overlay" id="modal-karyawan">
-      <div class="modal" style="max-width:680px">
-        <div class="modal-header">
-          <div class="modal-title" id="modal-karyawan-title">Tambah Karyawan</div>
-          <button class="btn-close" onclick="closeModal('modal-karyawan')">&#10005;</button>
+    <!-- ════════════════════════════════ KARYAWAN FORM PAGE ════════════════════════════════ -->
+    <div id="page-karyawan-form" class="page">
+      <div class="page-header">
+        <div>
+          <h1 id="karyawan-form-title">➕ Tambah Karyawan</h1>
+          <p id="karyawan-form-subtitle">Input data karyawan baru PO Blanket Manpower TPPI</p>
         </div>
-        <div class="modal-body">
+        <div class="page-header-actions">
+          <button class="btn btn-outline" onclick="goToKaryawanList()">📋 Lihat Daftar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title" id="karyawan-form-card-title">Form Data Karyawan</div>
+            <div class="card-subtitle">Isi data karyawan dengan lengkap dan benar</div>
+          </div>
+        </div>
+        <div class="card-body">
           <input type="hidden" id="k-id">
-          <div class="form-grid">
+
+          <!-- IDENTITAS DIRI -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">🪪 Identitas Diri</div>
+          <div class="form-grid" style="margin-bottom:24px">
             <div class="form-group full">
               <label>Nama Lengkap *</label>
               <input type="text" id="k-nama" placeholder="Nama lengkap karyawan">
@@ -1562,6 +1654,11 @@
               <label>No. HP</label>
               <input type="text" id="k-hp" placeholder="08xxxxxxxxxx">
             </div>
+          </div>
+
+          <!-- DATA PEKERJAAN -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">💼 Data Pekerjaan</div>
+          <div class="form-grid" style="margin-bottom:24px">
             <div class="form-group">
               <label>Departemen *</label>
               <select id="k-departemen">
@@ -1574,7 +1671,7 @@
             <div class="form-group">
               <label>Jabatan *</label>
               <input type="text" id="k-jabatan" placeholder="Cth: Helper Rotating, Fitter Project...">
-            </div>            
+            </div>
             <div class="form-group">
               <label>Tanggal Masuk *</label>
               <input type="date" id="k-tgl-masuk">
@@ -1592,9 +1689,9 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline" onclick="closeModal('modal-karyawan')">Batal</button>
-          <button class="btn btn-primary" onclick="saveKaryawan()">Simpan</button>
+        <div class="card-body" style="border-top:1px solid var(--border);padding-top:16px;display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-outline" onclick="resetKaryawanForm()">🔄 Reset Form</button>
+          <button class="btn btn-primary" onclick="saveKaryawan()">💾 Simpan Data</button>
         </div>
       </div>
     </div>
@@ -1703,6 +1800,228 @@
         </div>
       </div>
 
+    </div>
+
+
+    <!-- ═══════════════════ APD UKURAN FORM PAGE ═══════════════════ -->
+    <div id="page-apd-ukuran-form" class="page">
+      <div class="page-header">
+        <div>
+          <h1>👕 Input Ukuran APD Karyawan</h1>
+          <p id="apd-ukuran-form-subtitle">Tambah data ukuran APD untuk karyawan baru</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline" onclick="showPage('apd-ukuran-list', document.querySelector('[onclick*=\'apd-ukuran-list\']'))">📋 Lihat Daftar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title" id="apd-ukuran-form-card-title">Form Input Ukuran APD</div>
+            <div class="card-subtitle">Isi data ukuran APD karyawan dengan lengkap</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <input type="hidden" id="au-id">
+
+          <!-- DATA KARYAWAN -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">👷 Data Karyawan</div>
+          <div id="au-no-karyawan-alert" style="display:none;margin-bottom:14px">
+            <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div>Belum ada data karyawan. Silakan tambahkan karyawan di <strong>Master Data Karyawan</strong> terlebih dahulu.</div></div>
+          </div>
+          <div class="form-grid" style="margin-bottom:24px">
+            <div class="form-group full">
+              <label>Pilih Karyawan *</label>
+              <select id="au-karyawan-id" onchange="onAuKaryawanChange()" style="font-weight:600">
+                <option value="">— Pilih Karyawan —</option>
+              </select>
+              <small style="color:var(--text-muted);margin-top:4px;display:block">Data nama, jabatan, dan departemen akan terisi otomatis.</small>
+            </div>
+            <div class="form-group">
+              <label>Nama Lengkap</label>
+              <input type="text" id="au-nama" placeholder="Otomatis dari pilihan karyawan" readonly style="background:var(--bg);color:var(--text-muted);cursor:not-allowed">
+            </div>
+            <div class="form-group">
+              <label>Jabatan</label>
+              <input type="text" id="au-jabatan" placeholder="Otomatis dari pilihan karyawan" readonly style="background:var(--bg);color:var(--text-muted);cursor:not-allowed">
+            </div>
+            <div class="form-group full">
+              <label>Departemen</label>
+              <input type="text" id="au-departemen-text" placeholder="Otomatis dari pilihan karyawan" readonly style="background:var(--bg);color:var(--text-muted);cursor:not-allowed">
+              <input type="hidden" id="au-departemen">
+            </div>
+          </div>
+
+          <!-- WEARPACK -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">🦺 Wearpack</div>
+          <div class="form-grid" style="margin-bottom:24px">
+            <div class="form-group">
+              <label>Ukuran Wearpack</label>
+              <select id="au-wp-ukuran">
+                <option value="">-- Pilih Ukuran --</option>
+                <option>XS</option><option>S</option><option>M</option>
+                <option>L</option><option>XL</option><option>XXL</option><option>XXXL</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Warna Wearpack</label>
+              <input type="text" id="au-wp-warna" placeholder="Cth: Navy Blue, Orange...">
+            </div>
+            <div class="form-group">
+              <label>Jatah Wearpack (pcs)</label>
+              <input type="number" id="au-wp-jatah" placeholder="2" min="0" value="2">
+            </div>
+          </div>
+
+          <!-- ATASAN & BAWAHAN OPSIONAL -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">
+            👔 Seragam Atasan &amp; Bawahan
+            <span style="font-size:10px;background:var(--gold);color:white;padding:1px 7px;border-radius:4px;font-weight:700;letter-spacing:.5px;vertical-align:middle;margin-left:6px">Opsional</span>
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="checkbox-inline">
+              <input type="checkbox" id="au-punya-seragam" onchange="toggleSeragamSection()">
+              <span style="font-size:13px">Karyawan ini memiliki seragam atasan &amp; bawahan (umumnya pekerja kantor)</span>
+            </label>
+          </div>
+          <div id="au-seragam-section" style="display:none;margin-bottom:24px">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Ukuran Atasan</label>
+                <select id="au-atasan-ukuran">
+                  <option value="">-- Pilih Ukuran --</option>
+                  <option>XS</option><option>S</option><option>M</option>
+                  <option>L</option><option>XL</option><option>XXL</option><option>XXXL</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Warna Atasan</label>
+                <input type="text" id="au-atasan-warna" placeholder="Cth: Putih, Biru Muda...">
+              </div>
+              <div class="form-group">
+                <label>Ukuran Bawahan</label>
+                <select id="au-bawahan-ukuran">
+                  <option value="">-- Pilih Ukuran --</option>
+                  <option>XS</option><option>S</option><option>M</option>
+                  <option>L</option><option>XL</option><option>XXL</option><option>XXXL</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Warna Bawahan</label>
+                <input type="text" id="au-bawahan-warna" placeholder="Cth: Hitam, Biru Tua...">
+              </div>
+            </div>
+          </div>
+
+          <!-- APD LAINNYA -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">🪖 APD Lainnya</div>
+          <div class="form-grid" style="margin-bottom:24px">
+            <div class="form-group">
+              <label>Ukuran Sepatu (nomor)</label>
+              <input type="number" id="au-sepatu" placeholder="Cth: 42" min="30" max="50">
+            </div>
+            <div class="form-group">
+              <label>Warna Helm</label>
+              <input type="text" id="au-helm-warna" placeholder="Cth: Putih, Kuning, Merah...">
+            </div>
+            <div class="form-group">
+              <label>Ukuran Kaos</label>
+              <select id="au-kaos-ukuran">
+                <option value="">-- Pilih Ukuran --</option>
+                <option>XS</option><option>S</option><option>M</option>
+                <option>L</option><option>XL</option><option>XXL</option><option>XXXL</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- KETERANGAN -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">📝 Keterangan</div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Catatan (Opsional)</label>
+            <textarea id="au-keterangan" placeholder="Catatan tambahan..." rows="2"></textarea>
+          </div>
+        </div>
+        <div class="card-body" style="border-top:1px solid var(--border);padding-top:16px;display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-outline" onclick="resetApdUkuranForm()">🔄 Reset Form</button>
+          <button class="btn btn-primary" onclick="saveApdUkuran()">💾 Simpan Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ APD UKURAN LIST PAGE ═══════════════════ -->
+    <div id="page-apd-ukuran-list" class="page">
+      <div class="page-header">
+        <div>
+          <h1>📋 Daftar Ukuran APD Karyawan</h1>
+          <p>Kelola data ukuran APD seluruh karyawan</p>
+        </div>
+        <div class="page-header-actions">
+          <div class="au-view-toggle" id="au-view-toggle">
+            <button type="button" id="au-btn-compact" onclick="setApdUkuranView('compact')">▥ Padat</button>
+            <button type="button" id="au-btn-full" onclick="setApdUkuranView('full')">☰ Lengkap</button>
+          </div>
+          <button class="btn btn-outline" onclick="openExportApdUkuranModal()">⬇️ Export Data</button>
+          <button class="btn btn-primary" onclick="bukaFormTambahApdUkuran()">＋ Tambah Data</button>
+        </div>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body" style="padding:16px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label>Cari Nama</label>
+              <input type="text" id="filter-au-nama" placeholder="Ketik nama karyawan..." oninput="renderApdUkuranList()">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Departemen</label>
+              <select id="filter-au-dept" onchange="renderApdUkuranList()">
+                <option value="">Semua Departemen</option>
+                <option>Maintenance</option>
+                <option>Project Execution</option>
+                <option>HSSE</option>
+                <option>Procurement</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Jabatan</label>
+              <input type="text" id="filter-au-jabatan" placeholder="Cari jabatan..." oninput="renderApdUkuranList()">
+            </div>
+            <button class="btn btn-outline" onclick="resetFilterApdUkuran()" style="white-space:nowrap">🔄 Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid-4" id="au-summary-bar" style="margin-bottom:20px"></div>
+
+      <!-- TABLE -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:40px">No</th>
+                  <th class="col-sticky-left" data-sort-key="nama" onclick="toggleSort('apd-ukuran','nama',renderApdUkuranList)">Nama <span class="sort-icon">&#8645;</span></th>
+                  <th class="au-col-secondary" data-sort-key="jabatan" onclick="toggleSort('apd-ukuran','jabatan',renderApdUkuranList)">Jabatan <span class="sort-icon">&#8645;</span></th>
+                  <th class="au-col-secondary" data-sort-key="departemen" onclick="toggleSort('apd-ukuran','departemen',renderApdUkuranList)">Departemen <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="wpUkuran" onclick="toggleSort('apd-ukuran','wpUkuran',renderApdUkuranList)">WP (Ukuran · Warna) <span class="sort-icon">&#8645;</span></th>
+                  <th class="au-col-secondary" data-sort-key="wpJatah" onclick="toggleSort('apd-ukuran','wpJatah',renderApdUkuranList)">Jatah WP <span class="sort-icon">&#8645;</span></th>
+                  <th>Atasan (Ukuran · Warna)</th>
+                  <th>Bawahan (Ukuran · Warna)</th>
+                  <th data-sort-key="sepatu" onclick="toggleSort('apd-ukuran','sepatu',renderApdUkuranList)">Sepatu <span class="sort-icon">&#8645;</span></th>
+                  <th class="au-col-secondary">Warna Helm</th>
+                  <th class="au-col-secondary" data-sort-key="kaosUkuran" onclick="toggleSort('apd-ukuran','kaosUkuran',renderApdUkuranList)">Ukuran Kaos <span class="sort-icon">&#8645;</span></th>
+                  <th style="width:120px" class="col-sticky-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-apd-ukuran-body"></tbody>
+            </table>
+          </div>
+          <div id="apd-ukuran-pagination" style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)"></div>
+        </div>
+      </div>
     </div>
 
   </div><!-- /content -->
@@ -2437,22 +2756,75 @@
 </div>
 
 
+
+<!-- MODAL HAPUS APD UKURAN -->
+<div class="modal-overlay" id="modal-hapus-apd-ukuran">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Hapus Data Ukuran APD</div>
+      <button class="btn-close" onclick="closeModal('modal-hapus-apd-ukuran')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--text)">Yakin ingin menghapus data ukuran APD milik <strong id="hapus-au-nama"></strong>? Tindakan ini tidak dapat dibatalkan.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-hapus-apd-ukuran')">Batal</button>
+      <button class="btn btn-danger" onclick="confirmHapusApdUkuran()">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ MODAL PILIH KOLOM EXPORT — APD UKURAN ════════════════ -->
+<div class="modal-overlay" id="modal-export-apd-ukuran">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Pilih Kolom untuk Export</div>
+      <button class="btn-close" onclick="closeModal('modal-export-apd-ukuran')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Centang kolom yang ingin disertakan dalam file export. Data yang diekspor mengikuti filter yang sedang aktif di halaman.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button type="button" class="btn btn-outline btn-sm" onclick="setAllExportCols(true)">Pilih Semua</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="setAllExportCols(false)">Kosongkan</button>
+      </div>
+      <div id="export-au-col-list" style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;max-height:320px;overflow-y:auto;padding-right:4px"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-outline" onclick="closeModal('modal-export-apd-ukuran')">Batal</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" onclick="runExportApdUkuran('pdf')">📄 Export PDF</button>
+        <button class="btn btn-primary" onclick="runExportApdUkuran('excel')">📊 Export Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 
-// ════════════════ SIDEBAR MOBILE ════════════════
+// ════════════════ SIDEBAR MOBILE & DESKTOP ════════════════
 function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  const btn     = document.getElementById('hamburger-btn');
-  const isOpen  = sidebar.classList.contains('open');
-  if (isOpen) {
-    closeSidebar();
+  if (window.innerWidth <= 900) {
+    // Mobile: sidebar muncul sebagai overlay di atas konten
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const btn     = document.getElementById('hamburger-btn');
+    const isOpen  = sidebar.classList.contains('open');
+    if (isOpen) {
+      closeSidebar();
+    } else {
+      sidebar.classList.add('open');
+      overlay.classList.add('show');
+      btn.textContent = '✕';
+      btn.setAttribute('aria-label', 'Tutup menu');
+      document.body.style.overflow = 'hidden';
+    }
   } else {
-    sidebar.classList.add('open');
-    overlay.classList.add('show');
-    btn.textContent = '✕';
-    btn.setAttribute('aria-label', 'Tutup menu');
-    document.body.style.overflow = 'hidden';
+    // Desktop: sidebar collapse total, konten/tabel melebar penuh
+    const collapsed = document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('promanage_sidebar_collapsed', collapsed ? '1' : '0');
+    const btn = document.getElementById('hamburger-btn');
+    btn.setAttribute('aria-label', collapsed ? 'Tampilkan menu' : 'Sembunyikan menu');
+    btn.title = collapsed ? 'Tampilkan menu' : 'Sembunyikan menu';
   }
 }
 
@@ -2466,6 +2838,30 @@ function closeSidebar() {
   btn.setAttribute('aria-label', 'Buka menu');
   document.body.style.overflow = '';
 }
+
+// Terapkan preferensi collapse desktop yang tersimpan (hanya berlaku di layar > 900px)
+function applySavedSidebarState() {
+  if (window.innerWidth <= 900) return; // mobile selalu mulai tertutup (overlay), tidak perlu restore
+  const saved = localStorage.getItem('promanage_sidebar_collapsed');
+  if (saved === '1') {
+    document.body.classList.add('sidebar-collapsed');
+    const btn = document.getElementById('hamburger-btn');
+    if (btn) { btn.title = 'Tampilkan menu'; btn.setAttribute('aria-label', 'Tampilkan menu'); }
+  }
+}
+
+// Jika layar di-resize lintas breakpoint 900px, rapikan state agar tidak nyangkut
+window.addEventListener('resize', () => {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (window.innerWidth > 900) {
+    // Keluar dari mode mobile-overlay jika sebelumnya terbuka
+    if (sidebar && sidebar.classList.contains('open')) closeSidebar();
+  } else {
+    // Masuk ke mode mobile: pastikan tidak dalam kondisi collapsed ala desktop
+    document.body.classList.remove('sidebar-collapsed');
+  }
+});
 
 // ════════════════ TOAST NOTIFICATION ════════════════
 function showToast(msg, type = 'success', duration = 3000) {
@@ -2495,7 +2891,8 @@ let db = {
   jcn: [],
   operasional: [],
   roles: ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'],
-  karyawan: []
+  karyawan: [],
+  apdUkuran: []
 };
 
 // Load from localStorage
@@ -2564,7 +2961,7 @@ async function loadDB() {
     if (saved) { try { db = JSON.parse(saved); } catch (e2) {} }
   }
   // Ensure all arrays exist
-  ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional','karyawan'].forEach(k => { if(!db[k]) db[k] = []; });
+  ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional','karyawan','apdUkuran'].forEach(k => { if(!db[k]) db[k] = []; });
   if (!db.roles || !db.roles.length) {
     db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
   }
@@ -2613,7 +3010,10 @@ const pageTitles = {
   'jcn-master': 'Master Data No. JCN',
   'operasional': 'Biaya Operasional',
   'backup-restore': 'Backup & Restore',
-  'karyawan': 'Master Data Karyawan'
+  'karyawan': 'Master Data Karyawan',
+  'karyawan-form': 'Input Data Karyawan',
+  'apd-ukuran-form': 'Input Ukuran APD Karyawan',
+  'apd-ukuran-list': 'Daftar Ukuran APD Karyawan'
 };
 
 function showPage(id, el) {
@@ -2644,6 +3044,7 @@ const skeletonMap = {
   'apd-terima':  { tbody: 'tbl-terima-body',  cols: 5 },
   'apd-keluar':  { tbody: 'tbl-keluar-body',  cols: 6 },
   'operasional': { tbody: 'tbl-operasional-body', cols: 7 },
+  'apd-ukuran-list': { tbody: 'tbl-apd-ukuran-body', cols: 12 },
 };
 
 function showPageSkeleton(id) {
@@ -2712,6 +3113,9 @@ function renderPage(id) {
   else if (id === 'operasional') renderOperasional();
   else if (id === 'backup-restore') renderBackupRestore();
   else if (id === 'karyawan') renderKaryawan();
+  else if (id === 'karyawan-form') { /* form page */ }
+  else if (id === 'apd-ukuran-list') renderApdUkuranList();
+  else if (id === 'apd-ukuran-form') { populateAuKaryawanSelect(); }
 }
 
 // ════════════════ MODAL ════════════════
@@ -2866,6 +3270,7 @@ const sortState = {
   'jcn':         { key: null, dir: 1 },
   'operasional': { key: null, dir: 1 },
   'karyawan':    { key: null, dir: 1 },
+  'apd-ukuran':  { key: null, dir: 1 },
 };
 
 // Comparator universal: deteksi otomatis apakah nilai numerik, tanggal (YYYY-MM-DD), atau teks
@@ -4559,6 +4964,7 @@ function setDate() {
 async function initApp() {
   await loadDB(); // WAJIB ditunggu — IndexedDB selalu async, render pertama tidak boleh jalan sebelum data termuat
   applyTheme(localStorage.getItem('promanage_theme') || 'light', true);
+  applySavedSidebarState();
   setDate();
   renderDashboard();
 }
@@ -5878,7 +6284,7 @@ async function doRestore() {
   try {
     db = _restoreData.data;
     // Pastikan semua array ada
-    ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional'].forEach(k => { if(!db[k]) db[k] = []; });
+    ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional','apdUkuran'].forEach(k => { if(!db[k]) db[k] = []; });
     if (!db.roles || !db.roles.length) {
       db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
     }
@@ -6014,7 +6420,19 @@ function resetFilterKaryawan() {
   renderKaryawan();
 }
 
-function openKaryawanModal(id) {
+function bukaFormTambahKaryawan() {
+  resetKaryawanForm();
+  const navItem = document.querySelector('[onclick*=\'karyawan-form\']');
+  showPage('karyawan-form', navItem);
+}
+
+function goToKaryawanList() {
+  const navItem = document.querySelector('.nav-item[onclick*="\'karyawan\'"]') ||
+    [...document.querySelectorAll('.nav-item')].find(el => el.getAttribute('onclick') === "showPage('karyawan', this)");
+  showPage('karyawan', navItem);
+}
+
+function resetKaryawanForm() {
   document.getElementById('k-id').value = '';
   document.getElementById('k-nama').value = '';
   document.getElementById('k-tempat-lahir').value = '';
@@ -6029,8 +6447,14 @@ function openKaryawanModal(id) {
   document.getElementById('k-tgl-masuk').value = '';
   document.getElementById('k-status').value = 'Aktif';
   document.getElementById('k-keterangan').value = '';
-  document.getElementById('modal-karyawan-title').textContent = 'Tambah Karyawan';
-  openModal('modal-karyawan');
+  const ttl = document.getElementById('karyawan-form-title'); if(ttl) ttl.textContent = '➕ Tambah Karyawan';
+  const sub = document.getElementById('karyawan-form-subtitle'); if(sub) sub.textContent = 'Input data karyawan baru PO Blanket Manpower TPPI';
+  const card = document.getElementById('karyawan-form-card-title'); if(card) card.textContent = 'Form Data Karyawan';
+}
+
+// Kept for backward compat (called from nowhere now, but safe to keep)
+function openKaryawanModal() {
+  bukaFormTambahKaryawan();
 }
 
 function editKaryawan(id) {
@@ -6050,8 +6474,11 @@ function editKaryawan(id) {
   document.getElementById('k-tgl-masuk').value = k.tglMasuk||'';
   document.getElementById('k-status').value = k.status||'Aktif';
   document.getElementById('k-keterangan').value = k.keterangan||'';
-  document.getElementById('modal-karyawan-title').textContent = 'Edit Karyawan';
-  openModal('modal-karyawan');
+  const ttl = document.getElementById('karyawan-form-title'); if(ttl) ttl.textContent = '✏️ Edit Karyawan';
+  const sub = document.getElementById('karyawan-form-subtitle'); if(sub) sub.textContent = 'Edit data karyawan: ' + (k.nama||'');
+  const card = document.getElementById('karyawan-form-card-title'); if(card) card.textContent = 'Edit Data Karyawan';
+  const navItem = document.querySelector('[onclick*=\'karyawan-form\']');
+  showPage('karyawan-form', navItem);
 }
 
 function saveKaryawan() {
@@ -6088,9 +6515,10 @@ function saveKaryawan() {
     db.karyawan.push(data);
   }
   saveDB();
-  closeModal('modal-karyawan');
-  renderKaryawan();
   showToast(id ? 'Data karyawan berhasil diperbarui.' : 'Karyawan baru berhasil ditambahkan.', 'success');
+  resetKaryawanForm();
+  goToKaryawanList();
+  renderKaryawan();
 }
 
 function hapusKaryawan(id) {
@@ -6306,6 +6734,852 @@ function exportKaryawanPDF() {
   const pad = n => String(n).padStart(2,'0');
   doc.save(`DATA_KARYAWAN_${ts2.getFullYear()}${pad(ts2.getMonth()+1)}${pad(ts2.getDate())}.pdf`);
   showToast('Export PDF berhasil diunduh!', 'success');
+}
+
+
+// ════════════════════════════════ APD UKURAN MODULE ════════════════════════════════
+
+let _auHapusId = null;
+let _auPage = 1;
+const _auPerPage = 20;
+
+// ── Toggle Tampilan Padat / Lengkap ──
+// Preferensi disimpan di localStorage supaya tetap terpakai saat user kembali ke halaman ini.
+let _auViewMode = 'full';
+try {
+  const saved = localStorage.getItem('auViewMode');
+  if (saved === 'compact' || saved === 'full') _auViewMode = saved;
+} catch(e) { /* localStorage tidak tersedia, pakai default 'full' */ }
+
+function setApdUkuranView(mode) {
+  _auViewMode = (mode === 'compact') ? 'compact' : 'full';
+  try { localStorage.setItem('auViewMode', _auViewMode); } catch(e) { /* abaikan jika gagal */ }
+  applyApdUkuranViewMode();
+}
+
+function applyApdUkuranViewMode() {
+  const page = document.getElementById('page-apd-ukuran-list');
+  if (page) page.classList.toggle('au-mode-compact', _auViewMode === 'compact');
+  const btnCompact = document.getElementById('au-btn-compact');
+  const btnFull = document.getElementById('au-btn-full');
+  if (btnCompact) btnCompact.classList.toggle('active', _auViewMode === 'compact');
+  if (btnFull) btnFull.classList.toggle('active', _auViewMode === 'full');
+}
+
+function toggleSeragamSection() {
+  const checked = document.getElementById('au-punya-seragam').checked;
+  document.getElementById('au-seragam-section').style.display = checked ? 'block' : 'none';
+}
+
+function bukaFormTambahApdUkuran() {
+  resetApdUkuranForm();
+  populateAuKaryawanSelect();
+  const navItem = document.querySelector('[onclick*=\'apd-ukuran-form\']');
+  showPage('apd-ukuran-form', navItem);
+}
+
+function resetApdUkuranForm() {
+  const fields = ['au-id','au-nama','au-jabatan','au-wp-warna','au-atasan-warna','au-bawahan-warna','au-helm-warna','au-keterangan'];
+  fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const selects = ['au-wp-ukuran','au-atasan-ukuran','au-bawahan-ukuran','au-kaos-ukuran'];
+  selects.forEach(id => { const el = document.getElementById(id); if(el) el.selectedIndex = 0; });
+  const jatah = document.getElementById('au-wp-jatah'); if(jatah) jatah.value = '2';
+  const sepatu = document.getElementById('au-sepatu'); if(sepatu) sepatu.value = '';
+  const cb = document.getElementById('au-punya-seragam'); if(cb) cb.checked = false;
+  const sec = document.getElementById('au-seragam-section'); if(sec) sec.style.display = 'none';
+  const sub = document.getElementById('apd-ukuran-form-subtitle'); if(sub) sub.textContent = 'Tambah data ukuran APD untuk karyawan baru';
+  const ttl = document.getElementById('apd-ukuran-form-card-title'); if(ttl) ttl.textContent = 'Form Input Ukuran APD';
+  // Reset karyawan selector & read-only fields
+  const kSel = document.getElementById('au-karyawan-id'); if(kSel) kSel.value = '';
+  const kNama = document.getElementById('au-nama'); if(kNama) kNama.value = '';
+  const kJab = document.getElementById('au-jabatan'); if(kJab) kJab.value = '';
+  const kDept = document.getElementById('au-departemen-text'); if(kDept) kDept.value = '';
+  const kDeptH = document.getElementById('au-departemen'); if(kDeptH) kDeptH.value = '';
+}
+
+// Isi dropdown pilih karyawan dari db.karyawan (hanya yang Aktif, diurutkan per nama)
+function populateAuKaryawanSelect() {
+  const sel = document.getElementById('au-karyawan-id');
+  if (!sel) return;
+  const current = sel.value;
+  const karyawanList = [...(db.karyawan||[])].filter(k => k.status !== 'Resign').sort((a,b)=>(a.nama||'').localeCompare(b.nama||'','id-ID'));
+  const alertEl = document.getElementById('au-no-karyawan-alert');
+  if (!karyawanList.length) {
+    sel.innerHTML = '<option value="">— Belum ada karyawan —</option>';
+    if (alertEl) alertEl.style.display = 'block';
+    return;
+  }
+  if (alertEl) alertEl.style.display = 'none';
+  // Group by departemen untuk kemudahan pilih
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const grouped = {};
+  karyawanList.forEach(k => {
+    const dept = k.departemen || 'Lainnya';
+    if (!grouped[dept]) grouped[dept] = [];
+    grouped[dept].push(k);
+  });
+  const sortedDepts = [...deptOrder.filter(d=>grouped[d]), ...Object.keys(grouped).filter(d=>!deptOrder.includes(d))];
+  let html = '<option value="">— Pilih Karyawan —</option>';
+  sortedDepts.forEach(dept => {
+    html += `<optgroup label="📁 ${dept}">`;
+    grouped[dept].forEach(k => {
+      const sel_ = current === k.id ? 'selected' : '';
+      html += `<option value="${k.id}" ${sel_}>${k.nama}${k.jabatan ? ' – ' + k.jabatan : ''}</option>`;
+    });
+    html += '</optgroup>';
+  });
+  sel.innerHTML = html;
+}
+
+// Auto-fill jabatan & departemen saat karyawan dipilih dari dropdown
+function onAuKaryawanChange() {
+  const sel = document.getElementById('au-karyawan-id');
+  const kId = sel?.value;
+  const namaEl = document.getElementById('au-nama');
+  const jabEl  = document.getElementById('au-jabatan');
+  const deptEl = document.getElementById('au-departemen-text');
+  const deptH  = document.getElementById('au-departemen');
+  if (!kId) {
+    if (namaEl) namaEl.value = '';
+    if (jabEl)  jabEl.value = '';
+    if (deptEl) deptEl.value = '';
+    if (deptH)  deptH.value = '';
+    return;
+  }
+  const k = (db.karyawan||[]).find(x => x.id === kId);
+  if (!k) return;
+  if (namaEl) namaEl.value = k.nama||'';
+  if (jabEl)  jabEl.value  = k.jabatan||'';
+  if (deptEl) deptEl.value = k.departemen||'';
+  if (deptH)  deptH.value  = k.departemen||'';
+}
+
+function saveApdUkuran() {
+  const karyawanId = (document.getElementById('au-karyawan-id')?.value||'').trim();
+  const nama = (document.getElementById('au-nama').value||'').trim();
+  const jabatan = (document.getElementById('au-jabatan').value||'').trim();
+  if (!karyawanId) { showToast('Pilih karyawan terlebih dahulu.', 'error'); return; }
+  if (!nama)    { showToast('Nama karyawan wajib diisi.', 'error'); return; }
+  if (!jabatan) { showToast('Jabatan wajib diisi.', 'error'); return; }
+
+  const punyaSeragam = document.getElementById('au-punya-seragam').checked;
+  const id = document.getElementById('au-id').value;
+
+  const data = {
+    id: id || genId(),
+    karyawanId,
+    nama,
+    jabatan,
+    departemen: document.getElementById('au-departemen').value,
+    wpUkuran:   document.getElementById('au-wp-ukuran').value,
+    wpWarna:    (document.getElementById('au-wp-warna').value||'').trim(),
+    wpJatah:    parseInt(document.getElementById('au-wp-jatah').value)||0,
+    punyaSeragam,
+    atasanUkuran: punyaSeragam ? document.getElementById('au-atasan-ukuran').value : '',
+    atasanWarna:  punyaSeragam ? (document.getElementById('au-atasan-warna').value||'').trim() : '',
+    bawahanUkuran: punyaSeragam ? document.getElementById('au-bawahan-ukuran').value : '',
+    bawahanWarna:  punyaSeragam ? (document.getElementById('au-bawahan-warna').value||'').trim() : '',
+    sepatu:     (document.getElementById('au-sepatu').value||'').trim(),
+    helmWarna:  (document.getElementById('au-helm-warna').value||'').trim(),
+    kaosUkuran: document.getElementById('au-kaos-ukuran').value,
+    keterangan: (document.getElementById('au-keterangan').value||'').trim(),
+  };
+
+  if (!db.apdUkuran) db.apdUkuran = [];
+  if (id) {
+    const idx = db.apdUkuran.findIndex(x => x.id === id);
+    if (idx >= 0) db.apdUkuran[idx] = data;
+  } else {
+    db.apdUkuran.push(data);
+  }
+  saveDB();
+  showToast(id ? 'Data ukuran APD berhasil diperbarui.' : 'Data ukuran APD berhasil ditambahkan.', 'success');
+  resetApdUkuranForm();
+  const navItem = document.querySelector('[onclick*=\'apd-ukuran-list\']');
+  showPage('apd-ukuran-list', navItem);
+}
+
+function editApdUkuran(id) {
+  const d = (db.apdUkuran||[]).find(x => x.id === id);
+  if (!d) return;
+  populateAuKaryawanSelect();
+  document.getElementById('au-id').value = d.id;
+  // Restore karyawan selector — try by saved karyawanId, fallback by nama match
+  const kSel = document.getElementById('au-karyawan-id');
+  if (kSel) {
+    let matched = d.karyawanId && kSel.querySelector(`option[value="${d.karyawanId}"]`);
+    if (matched) {
+      kSel.value = d.karyawanId;
+    } else {
+      // fallback: find by nama
+      const opt = [...kSel.options].find(o => o.textContent.trim() === d.nama);
+      kSel.value = opt ? opt.value : '';
+    }
+  }
+  document.getElementById('au-nama').value = d.nama||'';
+  document.getElementById('au-jabatan').value = d.jabatan||'';
+  document.getElementById('au-departemen-text').value = d.departemen||'';
+  document.getElementById('au-departemen').value = d.departemen||'Maintenance';
+  document.getElementById('au-wp-ukuran').value = d.wpUkuran||'';
+  document.getElementById('au-wp-warna').value = d.wpWarna||'';
+  document.getElementById('au-wp-jatah').value = d.wpJatah||2;
+  const punyaSeragam = !!d.punyaSeragam;
+  document.getElementById('au-punya-seragam').checked = punyaSeragam;
+  document.getElementById('au-seragam-section').style.display = punyaSeragam ? 'block' : 'none';
+  document.getElementById('au-atasan-ukuran').value = d.atasanUkuran||'';
+  document.getElementById('au-atasan-warna').value = d.atasanWarna||'';
+  document.getElementById('au-bawahan-ukuran').value = d.bawahanUkuran||'';
+  document.getElementById('au-bawahan-warna').value = d.bawahanWarna||'';
+  document.getElementById('au-sepatu').value = d.sepatu||'';
+  document.getElementById('au-helm-warna').value = d.helmWarna||'';
+  document.getElementById('au-kaos-ukuran').value = d.kaosUkuran||'';
+  document.getElementById('au-keterangan').value = d.keterangan||'';
+  const sub = document.getElementById('apd-ukuran-form-subtitle');
+  if (sub) sub.textContent = 'Edit data ukuran APD: ' + d.nama;
+  const ttl = document.getElementById('apd-ukuran-form-card-title');
+  if (ttl) ttl.textContent = 'Edit Ukuran APD';
+  const navItem = document.querySelector('[onclick*=\'apd-ukuran-form\']');
+  showPage('apd-ukuran-form', navItem);
+}
+
+function hapusApdUkuran(id) {
+  const d = (db.apdUkuran||[]).find(x => x.id === id);
+  if (!d) return;
+  _auHapusId = id;
+  document.getElementById('hapus-au-nama').textContent = d.nama;
+  openModal('modal-hapus-apd-ukuran');
+}
+
+function confirmHapusApdUkuran() {
+  if (!_auHapusId) return;
+  db.apdUkuran = (db.apdUkuran||[]).filter(x => x.id !== _auHapusId);
+  _auHapusId = null;
+  saveDB();
+  closeModal('modal-hapus-apd-ukuran');
+  renderApdUkuranList();
+  showToast('Data ukuran APD berhasil dihapus.', 'info');
+}
+
+function getFilteredApdUkuran() {
+  let data = [...(db.apdUkuran||[])];
+  const q    = (document.getElementById('filter-au-nama')?.value||'').toLowerCase();
+  const dept = document.getElementById('filter-au-dept')?.value||'';
+  const jab  = (document.getElementById('filter-au-jabatan')?.value||'').toLowerCase();
+  if (q)    data = data.filter(d => (d.nama||'').toLowerCase().includes(q));
+  if (dept) data = data.filter(d => d.departemen === dept);
+  if (jab)  data = data.filter(d => (d.jabatan||'').toLowerCase().includes(jab));
+  // Sort using global sortState
+  const st = sortState['apd-ukuran'];
+  if (st && st.key) {
+    data = applySort('apd-ukuran', data, {
+      nama: d => d.nama||'',
+      jabatan: d => d.jabatan||'',
+      departemen: d => d.departemen||'',
+      wpUkuran: d => d.wpUkuran||'',
+      wpJatah: d => Number(d.wpJatah)||0,
+      sepatu: d => d.sepatu||'',
+      kaosUkuran: d => d.kaosUkuran||'',
+    });
+  }
+  return data;
+}
+
+function resetFilterApdUkuran() {
+  const ids = ['filter-au-nama','filter-au-jabatan'];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const dept = document.getElementById('filter-au-dept'); if(dept) dept.value = '';
+  _auPage = 1;
+  renderApdUkuranList();
+}
+
+function renderApdUkuranList() {
+  applyApdUkuranViewMode();
+  renderSortIndicators('apd-ukuran', '#page-apd-ukuran-list thead');
+  const data = getFilteredApdUkuran();
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / _auPerPage));
+  if (_auPage > totalPages) _auPage = totalPages;
+  const paged = data.slice((_auPage-1)*_auPerPage, _auPage*_auPerPage);
+
+  // ── Stat cards (selaras dengan pola grid-4 di halaman lain) ──
+  const summaryEl = document.getElementById('au-summary-bar');
+  if (summaryEl) {
+    const byDept = {};
+    data.forEach(d => { const k = d.departemen || 'Lainnya'; byDept[k] = (byDept[k]||0) + 1; });
+    const deptCount = Object.keys(byDept).length;
+    const punyaSeragam = data.filter(d => d.punyaSeragam).length;
+    const belumWP = data.filter(d => !d.wpUkuran).length;
+    summaryEl.innerHTML = `
+      <div class="stat-card blue"><span class="stat-icon">👕</span><div class="stat-label">Total Karyawan Terdata</div><div class="stat-value">${total}</div><div class="stat-sub">Data ukuran APD</div></div>
+      <div class="stat-card gold"><span class="stat-icon">🏢</span><div class="stat-label">Departemen</div><div class="stat-value">${deptCount}</div><div class="stat-sub">Tercatat dalam data</div></div>
+      <div class="stat-card green"><span class="stat-icon">🧥</span><div class="stat-label">Punya Seragam</div><div class="stat-value">${punyaSeragam}</div><div class="stat-sub">Atasan & bawahan</div></div>
+      <div class="stat-card red"><span class="stat-icon">⚠️</span><div class="stat-label">Belum Ada Ukuran WP</div><div class="stat-value">${belumWP}</div><div class="stat-sub">Perlu dilengkapi</div></div>
+    `;
+  }
+
+  const tbody = document.getElementById('tbl-apd-ukuran-body');
+  if (!tbody) return;
+  if (!paged.length) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada data ukuran APD. Klik "＋ Tambah Data" untuk mulai menginput.</td></tr>`;
+  } else {
+    tbody.innerHTML = paged.map((d, i) => {
+      const no = (_auPage-1)*_auPerPage + i + 1;
+      const seragamAtasan = d.punyaSeragam
+        ? `<span class="badge badge-gray">${esc(d.atasanUkuran||'-')}</span>${d.atasanWarna ? ' <small style="color:var(--text-muted)">'+esc(d.atasanWarna)+'</small>' : ''}`
+        : `<span style="color:var(--text-muted);font-size:11px">—</span>`;
+      const seragamBawahan = d.punyaSeragam
+        ? `<span class="badge badge-gray">${esc(d.bawahanUkuran||'-')}</span>${d.bawahanWarna ? ' <small style="color:var(--text-muted)">'+esc(d.bawahanWarna)+'</small>' : ''}`
+        : `<span style="color:var(--text-muted);font-size:11px">—</span>`;
+      const wpGabung = `<span class="badge badge-gray">${esc(d.wpUkuran||'-')}</span>${d.wpWarna ? ' <small style="color:var(--text-muted)">'+esc(d.wpWarna)+'</small>' : ''}`;
+      return `<tr>
+        <td style="color:var(--text-muted);font-size:12px">${no}</td>
+        <td class="col-sticky-left" style="font-weight:600">${esc(d.nama)}</td>
+        <td style="font-size:12px" class="au-col-secondary">${esc(d.jabatan||'-')}</td>
+        <td class="au-col-secondary"><span class="badge badge-blue">${esc(d.departemen||'-')}</span></td>
+        <td style="font-size:12px">${wpGabung}</td>
+        <td style="font-size:12px;text-align:center" class="au-col-secondary"><strong>${d.wpJatah||0}</strong> <small style="color:var(--text-muted)">pcs</small></td>
+        <td style="font-size:12px">${seragamAtasan}</td>
+        <td style="font-size:12px">${seragamBawahan}</td>
+        <td style="font-size:12px;text-align:center;font-weight:600">${esc(d.sepatu||'-')}</td>
+        <td style="font-size:12px" class="au-col-secondary">${esc(d.helmWarna||'-')}</td>
+        <td class="au-col-secondary"><span class="badge badge-gray">${esc(d.kaosUkuran||'-')}</span></td>
+        <td class="col-sticky-right">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="editApdUkuran('${d.id}')">Edit</button>
+            <button class="btn btn-sm" style="background:var(--danger-light);color:var(--danger);border:none" onclick="hapusApdUkuran('${d.id}')">Hapus</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Pagination
+  const pg = document.getElementById('apd-ukuran-pagination');
+  if (!pg) return;
+  const start = total === 0 ? 0 : (_auPage-1)*_auPerPage+1;
+  const end = Math.min(_auPage*_auPerPage, total);
+  pg.innerHTML = `
+    <span style="font-size:13px;color:var(--text-muted)">Menampilkan ${start}–${end} dari ${total} record</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="auGoPage(${_auPage-1})" ${_auPage<=1?'disabled':''}>&#8249; Prev</button>
+      <span style="font-size:13px;padding:5px 10px;background:var(--bg);border-radius:var(--radius-sm)">Hal. ${_auPage}/${totalPages}</span>
+      <button class="btn btn-outline btn-sm" onclick="auGoPage(${_auPage+1})" ${_auPage>=totalPages?'disabled':''}>Next &#8250;</button>
+    </div>
+  `;
+}
+
+function auGoPage(p) {
+  _auPage = p;
+  renderApdUkuranList();
+}
+
+// ════════════════════════════════ APD UKURAN – EXPORT: PILIH KOLOM ════════════════════════════════
+// Definisi kolom export terpusat — dipakai bersama oleh PDF & Excel supaya konsisten.
+// pdfW = lebar relatif kolom khusus untuk layout PDF (mm-equivalent, dijumlah lalu diskalakan ke lebar halaman).
+const EXPORT_AU_COLUMNS = [
+  { key: 'nama',          label: 'Nama Karyawan',  pdfW: 46, align: 'left',   get: d => d.nama || '-' },
+  { key: 'jabatan',       label: 'Jabatan',        pdfW: 35, align: 'left',   get: d => d.jabatan || '-' },
+  { key: 'departemen',    label: 'Departemen',     pdfW: 30, align: 'left',   get: d => d.departemen || '-' },
+  { key: 'wpUkuran',      label: 'Ukuran WP',      pdfW: 16, align: 'center', get: d => d.wpUkuran || '-' },
+  { key: 'wpWarna',       label: 'Warna WP',       pdfW: 20, align: 'left',   get: d => d.wpWarna || '-' },
+  { key: 'wpJatah',       label: 'Jatah WP (pcs)', pdfW: 16, align: 'center', get: d => d.wpJatah != null ? String(d.wpJatah) + ' pcs' : '0 pcs', getExcel: d => d.wpJatah != null ? d.wpJatah : 0 },
+  { key: 'atasanUkuran',  label: 'Ukuran Atasan',  pdfW: 18, align: 'center', get: d => d.punyaSeragam ? (d.atasanUkuran || '-') : '—' },
+  { key: 'atasanWarna',   label: 'Warna Atasan',   pdfW: 20, align: 'left',   get: d => d.punyaSeragam ? (d.atasanWarna || '-') : '—' },
+  { key: 'bawahanUkuran', label: 'Ukuran Bawahan', pdfW: 20, align: 'center', get: d => d.punyaSeragam ? (d.bawahanUkuran || '-') : '—' },
+  { key: 'bawahanWarna',  label: 'Warna Bawahan',  pdfW: 20, align: 'left',   get: d => d.punyaSeragam ? (d.bawahanWarna || '-') : '—' },
+  { key: 'sepatu',        label: 'Ukuran Sepatu',  pdfW: 14, align: 'center', get: d => d.sepatu || '-' },
+  { key: 'helmWarna',     label: 'Warna Helm',     pdfW: 20, align: 'left',   get: d => d.helmWarna || '-' },
+  { key: 'kaosUkuran',    label: 'Ukuran Kaos',    pdfW: 16, align: 'center', get: d => d.kaosUkuran || '-' },
+  { key: 'keterangan',    label: 'Keterangan',     pdfW: 30, align: 'left',   get: d => d.keterangan || '-' },
+];
+// Kolom yang tercentang secara default saat modal pertama dibuka (semua, supaya perilaku awal = export lengkap seperti sebelumnya)
+const EXPORT_AU_DEFAULT_KEYS = EXPORT_AU_COLUMNS.map(c => c.key);
+let _exportAuSelected = new Set(EXPORT_AU_DEFAULT_KEYS);
+
+function openExportApdUkuranModal() {
+  const data = getFilteredApdUkuran();
+  if (!data.length) { showToast('Tidak ada data untuk diekspor.', 'warn'); return; }
+  const list = document.getElementById('export-au-col-list');
+  if (list) {
+    list.innerHTML = EXPORT_AU_COLUMNS.map(c => `
+      <label class="checkbox-inline">
+        <input type="checkbox" data-export-au-col="${c.key}" ${_exportAuSelected.has(c.key) ? 'checked' : ''} onchange="toggleExportAuCol('${c.key}', this.checked)">
+        ${esc(c.label)}
+      </label>
+    `).join('');
+  }
+  openModal('modal-export-apd-ukuran');
+}
+
+function toggleExportAuCol(key, checked) {
+  if (checked) _exportAuSelected.add(key);
+  else _exportAuSelected.delete(key);
+}
+
+function setAllExportCols(checked) {
+  _exportAuSelected = checked ? new Set(EXPORT_AU_DEFAULT_KEYS) : new Set();
+  document.querySelectorAll('#export-au-col-list input[data-export-au-col]').forEach(cb => { cb.checked = checked; });
+}
+
+function runExportApdUkuran(type) {
+  const selectedCols = EXPORT_AU_COLUMNS.filter(c => _exportAuSelected.has(c.key));
+  if (!selectedCols.length) { showToast('Pilih minimal satu kolom untuk diekspor.', 'warn'); return; }
+  closeModal('modal-export-apd-ukuran');
+  if (type === 'pdf') exportApdUkuranPDF(selectedCols);
+  else exportApdUkuranExcel(selectedCols);
+}
+
+// ════════════════════════════════ APD UKURAN – EXPORT PDF ════════════════════════════════
+function exportApdUkuranPDF(selectedCols) {
+  const all = getFilteredApdUkuran();
+  if (!all.length) { showToast('Tidak ada data untuk diekspor.', 'warn'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const PW = 297, PH = 210, M = 12;
+  let y = M;
+
+  // ── Palette ──
+  const NAVY  = [27,  43,  75];
+  const STEEL = [74, 111, 165];
+  const MINT  = [232,244,241];
+  const GOLD  = [240,165,  0];
+  const WHITE = [255,255,255];
+  const LGRAY = [245,247,252];
+  const DGRAY = [100,110,130];
+
+  const ts = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tgl = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
+  const jam = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
+
+  // ══ Draw page header ══
+  function drawPageHeader() {
+    // Top gradient bar
+    doc.setFillColor(...NAVY);
+    doc.rect(0, 0, PW, 22, 'F');
+
+    // Gold accent stripe
+    doc.setFillColor(...GOLD);
+    doc.rect(0, 22, PW, 2.5, 'F');
+
+    // Company / doc title (left)
+    doc.setTextColor(...WHITE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('DATA UKURAN APD KARYAWAN', M, 10);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(200, 215, 240);
+    doc.text('PO Blanket Manpower TPPI', M, 16);
+
+    // Date / time (right)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...WHITE);
+    doc.text(`Dicetak: ${tgl}  ${jam}`, PW - M, 10, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(200, 215, 240);
+    doc.text(`Total data: ${all.length} karyawan`, PW - M, 16, { align: 'right' });
+
+    doc.setTextColor(30, 30, 30);
+    y = 30;
+  }
+
+  // ══ Draw page footer ══
+  function drawPageFooter(pageNum, totalPages) {
+    doc.setFillColor(...GOLD);
+    doc.rect(0, PH - 8.4, PW, 0.4, 'F');
+    doc.setFillColor(...LGRAY);
+    doc.rect(0, PH - 8, PW, 8, 'F');
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...DGRAY);
+    doc.text('ProManage – APD Management System', M, PH - 3.5);
+    doc.text(`Halaman ${pageNum} dari ${totalPages}`, PW / 2, PH - 3.5, { align: 'center' });
+    doc.text(`Dokumen bersifat rahasia – hanya untuk keperluan internal`, PW - M, PH - 3.5, { align: 'right' });
+  }
+
+  // ══ Table column definitions (dinamis sesuai kolom yang dipilih user) ══
+  const PAGE_TABLE_W = PW - 2 * M;
+  const noColW = 9;
+  const rawDataW = selectedCols.reduce((s, c) => s + c.pdfW, 0);
+  const scale = (PAGE_TABLE_W - noColW) / rawDataW; // skalakan agar total lebar selalu pas dengan halaman
+  const cols = [
+    { label: 'No', w: noColW, align: 'center' },
+    ...selectedCols.map(c => ({ label: c.label.replace(' (pcs)', '\n(pcs)').replace(' ', '\n'), w: c.pdfW * scale, align: c.align }))
+  ];
+  const TABLE_W = cols.reduce((s, c) => s + c.w, 0);
+  const ROW_H = 8;
+  const HDR_H = 12;
+
+  function drawTableHeader(startX) {
+    // Header bg
+    doc.setFillColor(...NAVY);
+    doc.rect(startX, y, TABLE_W, HDR_H, 'F');
+    doc.setFillColor(...GOLD);
+    doc.rect(startX, y + HDR_H - 0.7, TABLE_W, 0.7, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.5);
+    doc.setTextColor(...WHITE);
+    let cx = startX;
+    cols.forEach(c => {
+      const lines = c.label.split('\n');
+      const ly = lines.length === 2 ? y + 4 : y + 7;
+      if (lines.length === 2) {
+        doc.text(lines[0], cx + c.w / 2, ly,     { align: 'center' });
+        doc.text(lines[1], cx + c.w / 2, ly + 4, { align: 'center' });
+      } else {
+        doc.text(lines[0], cx + c.w / 2, ly, { align: 'center' });
+      }
+      // vertical divider
+      if (cx > startX) {
+        doc.setDrawColor(255,255,255);
+        doc.setLineWidth(0.2);
+        doc.line(cx, y, cx, y + HDR_H);
+      }
+      cx += c.w;
+    });
+    doc.setDrawColor(255,255,255);
+    doc.setLineWidth(0.3);
+    doc.rect(startX, y, TABLE_W, HDR_H);
+    y += HDR_H;
+    doc.setTextColor(30, 30, 30);
+  }
+
+  // Group data by departemen
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const grouped = {};
+  all.forEach(d => {
+    const dept = d.departemen || 'Lainnya';
+    if (!grouped[dept]) grouped[dept] = [];
+    grouped[dept].push(d);
+  });
+  // Put known depts first, then others
+  const sortedDepts = [
+    ...deptOrder.filter(d => grouped[d]),
+    ...Object.keys(grouped).filter(d => !deptOrder.includes(d))
+  ];
+
+  // Initial draw
+  drawPageHeader();
+
+  let pageNum = 1;
+  let globalNo = 0;
+  const PAGE_BODY_BOTTOM = PH - 12;
+
+  sortedDepts.forEach(dept => {
+    const rows = grouped[dept];
+
+    // Dept needs: dept header (8) + table header (HDR_H) + at least 1 row (ROW_H) + margin
+    if (y + 8 + HDR_H + ROW_H > PAGE_BODY_BOTTOM) {
+      drawPageFooter(pageNum, '?');
+      doc.addPage();
+      pageNum++;
+      drawPageHeader();
+    }
+
+    // ── Dept header ──
+    doc.setFillColor(...MINT);
+    doc.rect(M, y, TABLE_W, 8, 'F');
+    doc.setFillColor(...NAVY);
+    doc.rect(M, y, 2, 8, 'F');        // left accent block
+    doc.setDrawColor(...STEEL);
+    doc.setLineWidth(0.2);
+    doc.rect(M, y, TABLE_W, 8);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...NAVY);
+    doc.text(`  ${dept.toUpperCase()}`, M + 5, y + 5.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(...STEEL);
+    doc.text(`${rows.length} karyawan`, M + TABLE_W - 3, y + 5.5, { align: 'right' });
+    y += 8;
+
+    drawTableHeader(M);
+
+    rows.forEach((d, idx) => {
+      if (y + ROW_H > PAGE_BODY_BOTTOM) {
+        drawPageFooter(pageNum, '?');
+        doc.addPage();
+        pageNum++;
+        drawPageHeader();
+        drawTableHeader(M);
+      }
+
+      globalNo++;
+      const even = idx % 2 === 0;
+      if (even) {
+        doc.setFillColor(...LGRAY);
+        doc.rect(M, y, TABLE_W, ROW_H, 'F');
+      } else {
+        doc.setFillColor(...WHITE);
+        doc.rect(M, y, TABLE_W, ROW_H, 'F');
+      }
+
+      // row border
+      doc.setDrawColor(228, 232, 240);
+      doc.setLineWidth(0.15);
+      doc.rect(M, y, TABLE_W, ROW_H);
+
+      const cells = [
+        { v: String(globalNo), align: 'center' },
+        ...selectedCols.map(c => ({ v: c.get(d), align: c.align }))
+      ];
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(30, 30, 30);
+
+      let cx = M;
+      cells.forEach((cell, ci) => {
+        const cw = cols[ci].w;
+        const align = cell.align || cols[ci].align || 'left';
+        const maxW = cw - 2.5;
+        const txt = doc.splitTextToSize(String(cell.v), maxW)[0] || '';
+        const tx = align === 'center' ? cx + cw / 2 : (align === 'right' ? cx + cw - 1.5 : cx + 1.5);
+
+        // ci=0 selalu kolom No; ci=1 (jika ada) mengikuti kolom pertama yang dipilih user
+        const colKey = ci === 0 ? null : selectedCols[ci - 1].key;
+        if (colKey === 'wpUkuran' && cell.v && cell.v !== '-') {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...NAVY);
+        } else if (ci === 0) {
+          doc.setTextColor(...DGRAY);
+        } else if (colKey === 'nama') {
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(27, 43, 75);
+        } else {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(30, 30, 30);
+        }
+
+        // col divider
+        if (ci > 0) {
+          doc.setDrawColor(218, 225, 236);
+          doc.setLineWidth(0.12);
+          doc.line(cx, y, cx, y + ROW_H);
+        }
+
+        doc.text(txt, tx, y + ROW_H / 2 + 2, { align });
+        cx += cw;
+      });
+
+      y += ROW_H;
+    });
+
+    // subtotal row
+    doc.setFillColor(240, 244, 250);
+    doc.rect(M, y, TABLE_W, 6, 'F');
+    doc.setFont('helvetica', 'bolditalic');
+    doc.setFontSize(6.5);
+    doc.setTextColor(...STEEL);
+    doc.text(`  Subtotal ${dept}: ${rows.length} karyawan`, M + 2, y + 4);
+    y += 6;
+
+    y += 5; // dept separator
+  });
+
+  // ── Grand total ──
+  if (y + 10 > PAGE_BODY_BOTTOM) {
+    drawPageFooter(pageNum, '?');
+    doc.addPage();
+    pageNum++;
+    drawPageHeader();
+  }
+  doc.setFillColor(...GOLD);
+  doc.rect(M, y, TABLE_W, 0.8, 'F');
+  y += 0.8;
+  doc.setFillColor(...NAVY);
+  doc.rect(M, y, TABLE_W, 8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(...WHITE);
+  doc.text(`TOTAL KESELURUHAN: ${all.length} KARYAWAN`, M + TABLE_W / 2, y + 5.5, { align: 'center' });
+  y += 8;
+
+  // Fix footers now we know total pages
+  const totalPg = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPg; i++) {
+    doc.setPage(i);
+    drawPageFooter(i, totalPg);
+  }
+
+  const fn = `UKURAN_APD_KARYAWAN_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}.pdf`;
+  doc.save(fn);
+  showToast('Export PDF berhasil diunduh!', 'success');
+}
+
+// ════════════════════════════════ APD UKURAN – EXPORT EXCEL ════════════════════════════════
+async function exportApdUkuranExcel(selectedCols) {
+  if (typeof ExcelJS === 'undefined') {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  const all = getFilteredApdUkuran();
+  if (!all.length) { showToast('Tidak ada data untuk diekspor.', 'warn'); return; }
+
+  const ts = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tglStr = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
+  const jamStr = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
+
+  // ── Palet warna (ARGB, dipakai ExcelJS) ──
+  const NAVY  = 'FF1B2B4B';
+  const STEEL = 'FF4A6FA5';
+  const GOLD  = 'FFF0A500';
+  const MINT  = 'FFE8F4F1';
+  const LGRAY = 'FFF5F7FC';
+  const WHITE = 'FFFFFFFF';
+  const DARK  = 'FF1A1F36';
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'ProManage – APD Management System';
+  wb.created = ts;
+
+  // Lebar kolom default per key (dipetakan dari pdfW skala kasar ke karakter Excel)
+  const COL_W_MAP = {
+    nama: 26, jabatan: 22, departemen: 18, wpUkuran: 12, wpWarna: 16, wpJatah: 13,
+    atasanUkuran: 13, atasanWarna: 16, bawahanUkuran: 13, bawahanWarna: 16,
+    sepatu: 13, helmWarna: 14, kaosUkuran: 12, keterangan: 30,
+  };
+
+  // buildSheet menerima daftar kolom (selectedCols, opsional minus 'departemen' untuk sheet per-departemen)
+  function buildSheet(ws, title, rowsData, colsForSheet) {
+    const colCount = 1 + colsForSheet.length; // +1 untuk kolom No
+
+    // Kolom width
+    const widths = [6, ...colsForSheet.map(c => COL_W_MAP[c.key] || 16)];
+    ws.columns = widths.map(w => ({ width: w }));
+
+    // ── Banner judul ──
+    ws.mergeCells(1, 1, 1, colCount);
+    const c1 = ws.getCell(1,1);
+    c1.value = title;
+    c1.font = { name: 'Calibri', size: 16, bold: true, color: { argb: WHITE } };
+    c1.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    ws.getRow(1).height = 28;
+    for (let c = 1; c <= colCount; c++) ws.getCell(1,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:NAVY} };
+
+    ws.mergeCells(2, 1, 2, colCount);
+    const c2 = ws.getCell(2,1);
+    c2.value = `PO Blanket Manpower TPPI   •   Dicetak: ${tglStr} ${jamStr}   •   Total: ${rowsData.length} karyawan`;
+    c2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: WHITE } };
+    c2.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    ws.getRow(2).height = 18;
+    for (let c = 1; c <= colCount; c++) ws.getCell(2,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF243761'} };
+
+    // Gold accent line row
+    ws.mergeCells(3, 1, 3, colCount);
+    for (let c = 1; c <= colCount; c++) ws.getCell(3,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:GOLD} };
+    ws.getRow(3).height = 3;
+
+    // ── Header tabel ──
+    const headerRowIdx = 4;
+    const headers = ['No', ...colsForSheet.map(c => c.label)];
+    const headerRow = ws.getRow(headerRowIdx);
+    headers.forEach((h, i) => {
+      const cell = headerRow.getCell(i+1);
+      cell.value = h;
+      cell.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: WHITE } };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:STEEL} };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = { bottom: { style:'thin', color:{argb:NAVY} } };
+    });
+    headerRow.height = 26;
+    ws.views = [{ state: 'frozen', ySplit: headerRowIdx }];
+
+    // Kolom yang dirata-tengah & getter Excel-spesifik (angka murni utk wpJatah, dsb)
+    const CENTER_KEYS = new Set(['wpUkuran','wpJatah','atasanUkuran','bawahanUkuran','sepatu','kaosUkuran']);
+
+    // ── Baris data ──
+    rowsData.forEach((d, idx) => {
+      const r = ws.getRow(headerRowIdx + 1 + idx);
+      const vals = [idx+1, ...colsForSheet.map(c => (c.getExcel ? c.getExcel(d) : c.get(d)))];
+      vals.forEach((v, i) => { r.getCell(i+1).value = v; });
+      r.height = 18;
+      r.font = { name: 'Calibri', size: 10, color: { argb: DARK } };
+      r.alignment = { vertical: 'middle' };
+
+      const fillColor = idx % 2 === 0 ? WHITE : LGRAY;
+      for (let c = 1; c <= colCount; c++) {
+        const cell = r.getCell(c);
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:fillColor} };
+        cell.border = { bottom: { style:'hair', color:{argb:'FFE4E8F0'} } };
+      }
+      // Center kolom No + kolom yang relevan (ukuran, jatah, dll)
+      r.getCell(1).alignment = { vertical:'middle', horizontal:'center' };
+      colsForSheet.forEach((c, ci) => {
+        if (CENTER_KEYS.has(c.key)) r.getCell(ci+2).alignment = { vertical:'middle', horizontal:'center' };
+      });
+      // Bold nama (jika kolom nama disertakan)
+      const namaIdx = colsForSheet.findIndex(c => c.key === 'nama');
+      if (namaIdx > -1) r.getCell(namaIdx+2).font = { name:'Calibri', size: 10, bold: true, color:{argb:NAVY} };
+      // Highlight ukuran WP (jika disertakan)
+      const wpIdx = colsForSheet.findIndex(c => c.key === 'wpUkuran');
+      if (wpIdx > -1) r.getCell(wpIdx+2).font = { name:'Calibri', size: 10, bold: true, color:{argb:STEEL} };
+    });
+
+    // ── Baris subtotal ──
+    const subtotalRowIdx = headerRowIdx + 1 + rowsData.length;
+    ws.mergeCells(subtotalRowIdx, 1, subtotalRowIdx, colCount);
+    const subCell = ws.getCell(subtotalRowIdx, 1);
+    subCell.value = `Subtotal: ${rowsData.length} karyawan`;
+    subCell.font = { name:'Calibri', size: 10, bold: true, italic: true, color:{argb:NAVY} };
+    subCell.alignment = { vertical:'middle', horizontal:'left', indent: 1 };
+    for (let c = 1; c <= colCount; c++) ws.getCell(subtotalRowIdx,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:MINT} };
+    ws.getRow(subtotalRowIdx).height = 20;
+
+    // AutoFilter pada header
+    ws.autoFilter = { from: { row: headerRowIdx, column: 1 }, to: { row: headerRowIdx, column: colCount } };
+
+    // Outer border tipis di seluruh blok data
+    for (let c = 1; c <= colCount; c++) {
+      ws.getCell(headerRowIdx, c).border = { ...ws.getCell(headerRowIdx,c).border, top:{style:'medium',color:{argb:NAVY}} };
+    }
+  }
+
+  // ── Sheet 1: Semua Data (pakai semua kolom yang dipilih user, termasuk Departemen jika dicentang) ──
+  const ws1 = wb.addWorksheet('Semua Data', { properties: { tabColor: { argb: NAVY } } });
+  buildSheet(ws1, 'DATA UKURAN APD KARYAWAN — SELURUH DEPARTEMEN', all, selectedCols);
+
+  // ── Sheet 2–N: Per departemen (kolom Departemen dikeluarkan karena sudah jadi nama sheet) ──
+  const colsNoDept = selectedCols.filter(c => c.key !== 'departemen');
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const grouped = {};
+  all.forEach(d => {
+    const dept = d.departemen || 'Lainnya';
+    if (!grouped[dept]) grouped[dept] = [];
+    grouped[dept].push(d);
+  });
+  const sortedDepts = [
+    ...deptOrder.filter(d => grouped[d]),
+    ...Object.keys(grouped).filter(d => !deptOrder.includes(d))
+  ];
+  sortedDepts.forEach(dept => {
+    const sheetName = (dept.length > 31 ? dept.substring(0,31) : dept);
+    const ws = wb.addWorksheet(sheetName, { properties: { tabColor: { argb: STEEL } } });
+    buildSheet(ws, `DATA UKURAN APD — ${dept.toUpperCase()}`, grouped[dept], colsNoDept);
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `UKURAN_APD_KARYAWAN_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Export Excel berhasil diunduh!', 'success');
 }
 
 // Called from showPageSkeleton / showPage when rendering karyawan page
