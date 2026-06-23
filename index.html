@@ -1560,15 +1560,7 @@
             <div class="form-group">
               <label>Jabatan *</label>
               <input type="text" id="k-jabatan" placeholder="Cth: Helper Rotating, Fitter Project...">
-            </div>
-            <div class="form-group">
-              <label>No. Rekening</label>
-              <input type="text" id="k-rekening" placeholder="Nomor rekening bank">
-            </div>
-            <div class="form-group">
-              <label>Nama Bank</label>
-              <input type="text" id="k-bank" placeholder="BNI / Mandiri / BRI / ...">
-            </div>
+            </div>            
             <div class="form-group">
               <label>Tanggal Masuk *</label>
               <input type="date" id="k-tgl-masuk">
@@ -6020,8 +6012,6 @@ function openKaryawanModal(id) {
   document.getElementById('k-hp').value = '';
   document.getElementById('k-departemen').value = 'Maintenance';
   document.getElementById('k-jabatan').value = '';
-  document.getElementById('k-rekening').value = '';
-  document.getElementById('k-bank').value = '';
   document.getElementById('k-tgl-masuk').value = '';
   document.getElementById('k-status').value = 'Aktif';
   document.getElementById('k-keterangan').value = '';
@@ -6043,8 +6033,6 @@ function editKaryawan(id) {
   document.getElementById('k-hp').value = k.hp||'';
   document.getElementById('k-departemen').value = k.departemen||'Maintenance';
   document.getElementById('k-jabatan').value = k.jabatan||'';
-  document.getElementById('k-rekening').value = k.rekening||'';
-  document.getElementById('k-bank').value = k.bank||'';
   document.getElementById('k-tgl-masuk').value = k.tglMasuk||'';
   document.getElementById('k-status').value = k.status||'Aktif';
   document.getElementById('k-keterangan').value = k.keterangan||'';
@@ -6073,8 +6061,6 @@ function saveKaryawan() {
     hp: document.getElementById('k-hp').value.trim(),
     departemen: document.getElementById('k-departemen').value,
     jabatan,
-    rekening: document.getElementById('k-rekening').value.trim(),
-    bank: document.getElementById('k-bank').value.trim(),
     tglMasuk,
     status: document.getElementById('k-status').value,
     keterangan: document.getElementById('k-keterangan').value.trim(),
@@ -6160,22 +6146,12 @@ async function exportKaryawanExcel() {
 
     let globalNo = 1;
     Object.entries(jabatanGroups).forEach(([jab, karyawans]) => {
-      rows.push([jab.toUpperCase(), '', '', '', '', '', '', '', '', '']);
-      // Determine header based on dept (Project/HSSE have rekening+bank)
-      const hasRekening = dept !== 'Maintenance';
-      if (hasRekening) {
-        rows.push(['NO', 'NAMA', 'TEMPAT, TANGGAL LAHIR', 'ALAMAT', 'JENIS KELAMIN', 'AGAMA', 'NO. KTP', 'NO. HP', 'NO. REKENING', 'NAMA BANK', 'TANGGAL MASUK']);
-      } else {
-        rows.push(['NO', 'NAMA', 'TEMPAT, TANGGAL LAHIR', 'ALAMAT', 'JENIS KELAMIN', 'AGAMA', 'NO. KTP', 'NO. HP', 'TANGGAL MASUK']);
-      }
-      karyawans.forEach((k, i) => {
-        const ttl = [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ');
-        if (hasRekening) {
-          rows.push([i+1, k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.rekening||'', k.bank||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '']);
-        } else {
-          rows.push([i+1, k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '']);
-        }
-      });
+     rows.push([jab.toUpperCase(), '', '', '', '', '', '', '', '', '']);
+     rows.push(['NO','NAMA','TEMPAT, TANGGAL LAHIR','ALAMAT','JENIS KELAMIN','AGAMA','NO. KTP','NO. HP','TANGGAL MASUK']);
+     karyawans.forEach((k, i) => {
+      const ttl = [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ');
+      rows.push([i+1, k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '']);
+     });
       rows.push(['']);
     });
 
