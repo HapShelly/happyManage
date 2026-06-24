@@ -976,6 +976,12 @@
     <div class="nav-item" onclick="showPage('apd-ukuran-list', this)">
       <span class="nav-icon">📋</span> Daftar Ukuran APD
     </div>
+    <div class="nav-item" onclick="showPage('bpjs-form', this)">
+      <span class="nav-icon">🪪</span> Input BPJS
+    </div>
+    <div class="nav-item" onclick="showPage('bpjs-list', this)">
+      <span class="nav-icon">📑</span> Daftar BPJS Karyawan
+    </div>
 
     <div class="nav-label">Sistem</div>
     <div class="nav-item" onclick="showPage('backup-restore', this)">
@@ -2023,6 +2029,163 @@
       </div>
     </div>
 
+    <!-- ═══════════════════ BPJS INPUT FORM PAGE ═══════════════════ -->
+    <div id="page-bpjs-form" class="page">
+      <div class="page-header">
+        <div>
+          <h1>🪪 Input BPJS Karyawan</h1>
+          <p id="bpjs-form-subtitle">Tambah data No. BPJS untuk karyawan baru</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline" onclick="showPage('bpjs-list', document.querySelector('[onclick*=\'bpjs-list\']'))">📑 Lihat Daftar</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title" id="bpjs-form-card-title">Form Input BPJS Karyawan</div>
+            <div class="card-subtitle">Isi data nomor BPJS karyawan dengan lengkap</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <input type="hidden" id="bp-id">
+
+          <!-- DATA KARYAWAN -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">👷 Data Karyawan</div>
+          <div id="bp-no-karyawan-alert" style="display:none;margin-bottom:14px">
+            <div class="alert alert-warn"><span class="alert-icon">⚠️</span><div>Belum ada data karyawan. Silakan tambahkan karyawan di <strong>Master Data Karyawan</strong> terlebih dahulu.</div></div>
+          </div>
+          <div class="form-grid" style="margin-bottom:24px">
+            <div class="form-group full">
+              <label>Pilih Karyawan *</label>
+              <select id="bp-karyawan-id" onchange="onBpKaryawanChange()" style="font-weight:600">
+                <option value="">— Pilih Karyawan —</option>
+              </select>
+              <small style="color:var(--text-muted);margin-top:4px;display:block">Data nama, jabatan, dan departemen akan terisi otomatis.</small>
+            </div>
+            <div class="form-group">
+              <label>Nama Lengkap</label>
+              <input type="text" id="bp-nama" placeholder="Otomatis dari pilihan karyawan" readonly style="background:var(--bg);color:var(--text-muted);cursor:not-allowed">
+            </div>
+            <div class="form-group">
+              <label>Jabatan</label>
+              <input type="text" id="bp-jabatan" placeholder="Otomatis dari pilihan karyawan" readonly style="background:var(--bg);color:var(--text-muted);cursor:not-allowed">
+            </div>
+            <div class="form-group full">
+              <label>Departemen</label>
+              <input type="text" id="bp-departemen-text" placeholder="Otomatis dari pilihan karyawan" readonly style="background:var(--bg);color:var(--text-muted);cursor:not-allowed">
+              <input type="hidden" id="bp-departemen">
+            </div>
+          </div>
+
+          <!-- BPJS -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">🪪 Nomor BPJS</div>
+          <div class="form-grid" style="margin-bottom:24px">
+            <div class="form-group">
+              <label>No. BPJS Kesehatan</label>
+              <input type="text" id="bp-kesehatan" placeholder="Cth: 0001234567890" inputmode="numeric">
+            </div>
+            <div class="form-group">
+              <label>No. BPJS Ketenagakerjaan</label>
+              <input type="text" id="bp-tk" placeholder="Cth: 21XXXXXXXXX" inputmode="numeric">
+            </div>
+            <div class="form-group">
+              <label>Status Kepesertaan</label>
+              <select id="bp-status">
+                <option value="Aktif">Aktif</option>
+                <option value="Tidak Aktif">Tidak Aktif</option>
+                <option value="Dalam Proses">Dalam Proses</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- KETERANGAN -->
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid var(--border)">📝 Keterangan</div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Catatan (Opsional)</label>
+            <textarea id="bp-keterangan" placeholder="Catatan tambahan..." rows="2"></textarea>
+          </div>
+        </div>
+        <div class="card-body" style="border-top:1px solid var(--border);padding-top:16px;display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-outline" onclick="resetBpjsForm()">🔄 Reset Form</button>
+          <button class="btn btn-primary" onclick="saveBpjs()">💾 Simpan Data</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ BPJS LIST PAGE ═══════════════════ -->
+    <div id="page-bpjs-list" class="page">
+      <div class="page-header">
+        <div>
+          <h1>📑 Daftar BPJS Karyawan</h1>
+          <p>Kelola data No. BPJS Kesehatan dan BPJS Ketenagakerjaan seluruh karyawan</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline" onclick="openExportBpjsModal()">⬇️ Export Data</button>
+          <button class="btn btn-primary" onclick="bukaFormTambahBpjs()">＋ Tambah Data</button>
+        </div>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-body" style="padding:16px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label>Cari Nama</label>
+              <input type="text" id="filter-bp-nama" placeholder="Ketik nama karyawan..." oninput="renderBpjsList()">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Departemen</label>
+              <select id="filter-bp-dept" onchange="renderBpjsList()">
+                <option value="">Semua Departemen</option>
+                <option>Maintenance</option>
+                <option>Project Execution</option>
+                <option>HSSE</option>
+                <option>Procurement</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label>Status Kepesertaan</label>
+              <select id="filter-bp-status" onchange="renderBpjsList()">
+                <option value="">Semua Status</option>
+                <option>Aktif</option>
+                <option>Tidak Aktif</option>
+                <option>Dalam Proses</option>
+              </select>
+            </div>
+            <button class="btn btn-outline" onclick="resetFilterBpjs()" style="white-space:nowrap">🔄 Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAT CARDS -->
+      <div class="grid-4" id="bp-summary-bar" style="margin-bottom:20px"></div>
+
+      <!-- TABLE -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:40px">No</th>
+                  <th data-sort-key="nama" onclick="toggleSort('bpjs','nama',renderBpjsList)">Nama <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="jabatan" onclick="toggleSort('bpjs','jabatan',renderBpjsList)">Jabatan <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="departemen" onclick="toggleSort('bpjs','departemen',renderBpjsList)">Departemen <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="bpjsKesehatan" onclick="toggleSort('bpjs','bpjsKesehatan',renderBpjsList)">No. BPJS Kesehatan <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="bpjsTK" onclick="toggleSort('bpjs','bpjsTK',renderBpjsList)">No. BPJS Ketenagakerjaan <span class="sort-icon">&#8645;</span></th>
+                  <th data-sort-key="status" onclick="toggleSort('bpjs','status',renderBpjsList)">Status <span class="sort-icon">&#8645;</span></th>
+                  <th style="width:120px">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-bpjs-body"></tbody>
+            </table>
+          </div>
+          <div id="bpjs-pagination" style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -2798,6 +2961,48 @@
   </div>
 </div>
 
+<!-- ════════════════ MODAL HAPUS — BPJS ════════════════ -->
+<div class="modal-overlay" id="modal-hapus-bpjs">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Hapus Data BPJS</div>
+      <button class="btn-close" onclick="closeModal('modal-hapus-bpjs')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--text)">Yakin ingin menghapus data BPJS milik <strong id="hapus-bp-nama"></strong>? Tindakan ini tidak dapat dibatalkan.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-hapus-bpjs')">Batal</button>
+      <button class="btn btn-danger" onclick="confirmHapusBpjs()">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ MODAL PILIH KOLOM EXPORT — BPJS ════════════════ -->
+<div class="modal-overlay" id="modal-export-bpjs">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">Pilih Kolom untuk Export</div>
+      <button class="btn-close" onclick="closeModal('modal-export-bpjs')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Centang kolom yang ingin disertakan dalam file export. Data yang diekspor mengikuti filter yang sedang aktif di halaman.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button type="button" class="btn btn-outline btn-sm" onclick="setAllExportBpjsCols(true)">Pilih Semua</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="setAllExportBpjsCols(false)">Kosongkan</button>
+      </div>
+      <div id="export-bp-col-list" style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;max-height:320px;overflow-y:auto;padding-right:4px"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-outline" onclick="closeModal('modal-export-bpjs')">Batal</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" onclick="runExportBpjs('pdf')">📄 Export PDF</button>
+        <button class="btn btn-primary" onclick="runExportBpjs('excel')">📊 Export Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 
 // ════════════════ SIDEBAR MOBILE & DESKTOP ════════════════
@@ -2891,7 +3096,8 @@ let db = {
   operasional: [],
   roles: ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'],
   karyawan: [],
-  apdUkuran: []
+  apdUkuran: [],
+  bpjs: []
 };
 
 // Load from localStorage
@@ -2960,7 +3166,7 @@ async function loadDB() {
     if (saved) { try { db = JSON.parse(saved); } catch (e2) {} }
   }
   // Ensure all arrays exist
-  ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional','karyawan','apdUkuran'].forEach(k => { if(!db[k]) db[k] = []; });
+  ['po','tagihan','apd','rencana','terima','jcn','keluar','operasional','karyawan','apdUkuran','bpjs'].forEach(k => { if(!db[k]) db[k] = []; });
   if (!db.roles || !db.roles.length) {
     db.roles = ['Fitter Project','Fitter Maintenance','Fitter Walkway','Welder Project','Welder Walkway','Welder Maintenance','Helper Walkway','Helper Rotating','Helper Project','Housekeeping'];
   }
@@ -3012,7 +3218,9 @@ const pageTitles = {
   'karyawan': 'Master Data Karyawan',
   'karyawan-form': 'Input Data Karyawan',
   'apd-ukuran-form': 'Input Ukuran APD Karyawan',
-  'apd-ukuran-list': 'Daftar Ukuran APD Karyawan'
+  'apd-ukuran-list': 'Daftar Ukuran APD Karyawan',
+  'bpjs-form': 'Input BPJS Karyawan',
+  'bpjs-list': 'Daftar BPJS Karyawan'
 };
 
 function showPage(id, el) {
@@ -3044,6 +3252,7 @@ const skeletonMap = {
   'apd-keluar':  { tbody: 'tbl-keluar-body',  cols: 6 },
   'operasional': { tbody: 'tbl-operasional-body', cols: 7 },
   'apd-ukuran-list': { tbody: 'tbl-apd-ukuran-body', cols: 12 },
+  'bpjs-list': { tbody: 'tbl-bpjs-body', cols: 8 },
 };
 
 function showPageSkeleton(id) {
@@ -3115,6 +3324,8 @@ function renderPage(id) {
   else if (id === 'karyawan-form') { /* form page */ }
   else if (id === 'apd-ukuran-list') renderApdUkuranList();
   else if (id === 'apd-ukuran-form') { populateAuKaryawanSelect(); }
+  else if (id === 'bpjs-list') renderBpjsList();
+  else if (id === 'bpjs-form') { populateBpjsKaryawanSelect(); }
 }
 
 // ════════════════ MODAL ════════════════
@@ -3270,6 +3481,7 @@ const sortState = {
   'operasional': { key: null, dir: 1 },
   'karyawan':    { key: null, dir: 1 },
   'apd-ukuran':  { key: null, dir: 1 },
+  'bpjs':        { key: null, dir: 1 },
 };
 
 // Comparator universal: deteksi otomatis apakah nilai numerik, tanggal (YYYY-MM-DD), atau teks
@@ -7585,6 +7797,621 @@ async function exportApdUkuranExcel(selectedCols) {
   const a = document.createElement('a');
   a.href = url;
   a.download = `UKURAN_APD_KARYAWAN_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Export Excel berhasil diunduh!', 'success');
+}
+
+// ════════════════════════════════ BPJS KARYAWAN MODULE ════════════════════════════════
+
+let _bpHapusId = null;
+let _bpPage = 1;
+const _bpPerPage = 20;
+
+function bukaFormTambahBpjs() {
+  resetBpjsForm();
+  populateBpjsKaryawanSelect();
+  const navItem = document.querySelector('[onclick*=\'bpjs-form\']');
+  showPage('bpjs-form', navItem);
+}
+
+function resetBpjsForm() {
+  const fields = ['bp-id','bp-nama','bp-jabatan','bp-kesehatan','bp-tk','bp-keterangan'];
+  fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const statusEl = document.getElementById('bp-status'); if(statusEl) statusEl.value = 'Aktif';
+  const sub = document.getElementById('bpjs-form-subtitle'); if(sub) sub.textContent = 'Tambah data No. BPJS untuk karyawan baru';
+  const ttl = document.getElementById('bpjs-form-card-title'); if(ttl) ttl.textContent = 'Form Input BPJS Karyawan';
+  const kSel = document.getElementById('bp-karyawan-id'); if(kSel) kSel.value = '';
+  const kDept = document.getElementById('bp-departemen-text'); if(kDept) kDept.value = '';
+  const kDeptH = document.getElementById('bp-departemen'); if(kDeptH) kDeptH.value = '';
+}
+
+// Isi dropdown pilih karyawan dari db.karyawan (hanya yang Aktif, diurutkan & dikelompokkan per departemen)
+function populateBpjsKaryawanSelect() {
+  const sel = document.getElementById('bp-karyawan-id');
+  if (!sel) return;
+  const current = sel.value;
+  const karyawanList = [...(db.karyawan||[])].filter(k => k.status !== 'Resign').sort((a,b)=>(a.nama||'').localeCompare(b.nama||'','id-ID'));
+  const alertEl = document.getElementById('bp-no-karyawan-alert');
+  if (!karyawanList.length) {
+    sel.innerHTML = '<option value="">— Belum ada karyawan —</option>';
+    if (alertEl) alertEl.style.display = 'block';
+    return;
+  }
+  if (alertEl) alertEl.style.display = 'none';
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const grouped = {};
+  karyawanList.forEach(k => {
+    const dept = k.departemen || 'Lainnya';
+    if (!grouped[dept]) grouped[dept] = [];
+    grouped[dept].push(k);
+  });
+  const sortedDepts = [...deptOrder.filter(d=>grouped[d]), ...Object.keys(grouped).filter(d=>!deptOrder.includes(d))];
+  let html = '<option value="">— Pilih Karyawan —</option>';
+  sortedDepts.forEach(dept => {
+    html += `<optgroup label="📁 ${dept}">`;
+    grouped[dept].forEach(k => {
+      const sel_ = current === k.id ? 'selected' : '';
+      html += `<option value="${k.id}" ${sel_}>${k.nama}${k.jabatan ? ' – ' + k.jabatan : ''}</option>`;
+    });
+    html += '</optgroup>';
+  });
+  sel.innerHTML = html;
+}
+
+// Auto-fill jabatan & departemen saat karyawan dipilih dari dropdown
+function onBpKaryawanChange() {
+  const sel = document.getElementById('bp-karyawan-id');
+  const kId = sel?.value;
+  const namaEl = document.getElementById('bp-nama');
+  const jabEl  = document.getElementById('bp-jabatan');
+  const deptEl = document.getElementById('bp-departemen-text');
+  const deptH  = document.getElementById('bp-departemen');
+  if (!kId) {
+    if (namaEl) namaEl.value = '';
+    if (jabEl)  jabEl.value = '';
+    if (deptEl) deptEl.value = '';
+    if (deptH)  deptH.value = '';
+    return;
+  }
+  const k = (db.karyawan||[]).find(x => x.id === kId);
+  if (!k) return;
+  if (namaEl) namaEl.value = k.nama||'';
+  if (jabEl)  jabEl.value  = k.jabatan||'';
+  if (deptEl) deptEl.value = k.departemen||'';
+  if (deptH)  deptH.value  = k.departemen||'';
+}
+
+function saveBpjs() {
+  const karyawanId = (document.getElementById('bp-karyawan-id')?.value||'').trim();
+  const nama = (document.getElementById('bp-nama').value||'').trim();
+  const jabatan = (document.getElementById('bp-jabatan').value||'').trim();
+  if (!karyawanId) { showToast('Pilih karyawan terlebih dahulu.', 'error'); return; }
+  if (!nama)    { showToast('Nama karyawan wajib diisi.', 'error'); return; }
+
+  const bpjsKesehatan = (document.getElementById('bp-kesehatan').value||'').trim();
+  const bpjsTK = (document.getElementById('bp-tk').value||'').trim();
+  if (!bpjsKesehatan && !bpjsTK) { showToast('Isi minimal salah satu nomor BPJS.', 'error'); return; }
+
+  const id = document.getElementById('bp-id').value;
+
+  // Cegah duplikasi data BPJS untuk karyawan yang sama (selain dirinya sendiri saat edit)
+  const dup = (db.bpjs||[]).find(x => x.karyawanId === karyawanId && x.id !== id);
+  if (dup) { showToast('Karyawan ini sudah memiliki data BPJS. Silakan edit data yang sudah ada.', 'error'); return; }
+
+  const data = {
+    id: id || genId(),
+    karyawanId,
+    nama,
+    jabatan,
+    departemen: document.getElementById('bp-departemen').value,
+    bpjsKesehatan,
+    bpjsTK,
+    status: document.getElementById('bp-status').value || 'Aktif',
+    keterangan: (document.getElementById('bp-keterangan').value||'').trim(),
+  };
+
+  if (!db.bpjs) db.bpjs = [];
+  if (id) {
+    const idx = db.bpjs.findIndex(x => x.id === id);
+    if (idx >= 0) db.bpjs[idx] = data;
+  } else {
+    db.bpjs.push(data);
+  }
+  saveDB();
+  showToast(id ? 'Data BPJS berhasil diperbarui.' : 'Data BPJS berhasil ditambahkan.', 'success');
+  resetBpjsForm();
+  const navItem = document.querySelector('[onclick*=\'bpjs-list\']');
+  showPage('bpjs-list', navItem);
+}
+
+function editBpjs(id) {
+  const d = (db.bpjs||[]).find(x => x.id === id);
+  if (!d) return;
+  populateBpjsKaryawanSelect();
+  document.getElementById('bp-id').value = d.id;
+  const kSel = document.getElementById('bp-karyawan-id');
+  if (kSel) {
+    let matched = d.karyawanId && kSel.querySelector(`option[value="${d.karyawanId}"]`);
+    if (matched) {
+      kSel.value = d.karyawanId;
+    } else {
+      const opt = [...kSel.options].find(o => o.textContent.trim() === d.nama);
+      kSel.value = opt ? opt.value : '';
+    }
+  }
+  document.getElementById('bp-nama').value = d.nama||'';
+  document.getElementById('bp-jabatan').value = d.jabatan||'';
+  document.getElementById('bp-departemen-text').value = d.departemen||'';
+  document.getElementById('bp-departemen').value = d.departemen||'';
+  document.getElementById('bp-kesehatan').value = d.bpjsKesehatan||'';
+  document.getElementById('bp-tk').value = d.bpjsTK||'';
+  document.getElementById('bp-status').value = d.status||'Aktif';
+  document.getElementById('bp-keterangan').value = d.keterangan||'';
+  const sub = document.getElementById('bpjs-form-subtitle');
+  if (sub) sub.textContent = 'Edit data BPJS: ' + d.nama;
+  const ttl = document.getElementById('bpjs-form-card-title');
+  if (ttl) ttl.textContent = 'Edit Data BPJS';
+  const navItem = document.querySelector('[onclick*=\'bpjs-form\']');
+  showPage('bpjs-form', navItem);
+}
+
+function hapusBpjs(id) {
+  const d = (db.bpjs||[]).find(x => x.id === id);
+  if (!d) return;
+  _bpHapusId = id;
+  document.getElementById('hapus-bp-nama').textContent = d.nama;
+  openModal('modal-hapus-bpjs');
+}
+
+function confirmHapusBpjs() {
+  if (!_bpHapusId) return;
+  db.bpjs = (db.bpjs||[]).filter(x => x.id !== _bpHapusId);
+  _bpHapusId = null;
+  saveDB();
+  closeModal('modal-hapus-bpjs');
+  renderBpjsList();
+  showToast('Data BPJS berhasil dihapus.', 'info');
+}
+
+function getFilteredBpjs() {
+  let data = [...(db.bpjs||[])];
+  const q      = (document.getElementById('filter-bp-nama')?.value||'').toLowerCase();
+  const dept   = document.getElementById('filter-bp-dept')?.value||'';
+  const status = document.getElementById('filter-bp-status')?.value||'';
+  if (q)      data = data.filter(d => (d.nama||'').toLowerCase().includes(q));
+  if (dept)   data = data.filter(d => d.departemen === dept);
+  if (status) data = data.filter(d => d.status === status);
+  const st = sortState['bpjs'];
+  if (st && st.key) {
+    data = applySort('bpjs', data, {
+      nama: d => d.nama||'',
+      jabatan: d => d.jabatan||'',
+      departemen: d => d.departemen||'',
+      bpjsKesehatan: d => d.bpjsKesehatan||'',
+      bpjsTK: d => d.bpjsTK||'',
+      status: d => d.status||'',
+    });
+  }
+  return data;
+}
+
+function resetFilterBpjs() {
+  const ids = ['filter-bp-nama'];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const dept = document.getElementById('filter-bp-dept'); if(dept) dept.value = '';
+  const status = document.getElementById('filter-bp-status'); if(status) status.value = '';
+  _bpPage = 1;
+  renderBpjsList();
+}
+
+function renderBpjsList() {
+  renderSortIndicators('bpjs', '#page-bpjs-list thead');
+  const data = getFilteredBpjs();
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / _bpPerPage));
+  if (_bpPage > totalPages) _bpPage = totalPages;
+  const paged = data.slice((_bpPage-1)*_bpPerPage, _bpPage*_bpPerPage);
+
+  // ── Stat cards (selaras dengan pola grid-4 di halaman lain) ──
+  const summaryEl = document.getElementById('bp-summary-bar');
+  if (summaryEl) {
+    const aktif = data.filter(d => d.status === 'Aktif').length;
+    const belumKesehatan = data.filter(d => !d.bpjsKesehatan).length;
+    const belumTK = data.filter(d => !d.bpjsTK).length;
+    summaryEl.innerHTML = `
+      <div class="stat-card blue"><span class="stat-icon">🪪</span><div class="stat-label">Total Karyawan Terdata</div><div class="stat-value">${total}</div><div class="stat-sub">Data BPJS</div></div>
+      <div class="stat-card green"><span class="stat-icon">✅</span><div class="stat-label">Status Aktif</div><div class="stat-value">${aktif}</div><div class="stat-sub">Kepesertaan aktif</div></div>
+      <div class="stat-card gold"><span class="stat-icon">⚠️</span><div class="stat-label">Belum Ada BPJS Kesehatan</div><div class="stat-value">${belumKesehatan}</div><div class="stat-sub">Perlu dilengkapi</div></div>
+      <div class="stat-card red"><span class="stat-icon">⚠️</span><div class="stat-label">Belum Ada BPJS TK</div><div class="stat-value">${belumTK}</div><div class="stat-sub">Perlu dilengkapi</div></div>
+    `;
+  }
+
+  const tbody = document.getElementById('tbl-bpjs-body');
+  if (!tbody) return;
+  if (!paged.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada data BPJS. Klik "＋ Tambah Data" untuk mulai menginput.</td></tr>`;
+  } else {
+    tbody.innerHTML = paged.map((d, i) => {
+      const no = (_bpPage-1)*_bpPerPage + i + 1;
+      const statusBadge = d.status === 'Aktif' ? 'badge-green' : (d.status === 'Dalam Proses' ? 'badge-gold' : 'badge-gray');
+      return `<tr>
+        <td style="color:var(--text-muted);font-size:12px">${no}</td>
+        <td style="font-weight:600">${esc(d.nama)}</td>
+        <td style="font-size:12px">${esc(d.jabatan||'-')}</td>
+        <td><span class="badge badge-blue">${esc(d.departemen||'-')}</span></td>
+        <td style="font-size:12px">${d.bpjsKesehatan ? esc(d.bpjsKesehatan) : '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td style="font-size:12px">${d.bpjsTK ? esc(d.bpjsTK) : '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td><span class="badge ${statusBadge}">${esc(d.status||'Aktif')}</span></td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="editBpjs('${d.id}')">Edit</button>
+            <button class="btn btn-sm" style="background:var(--danger-light);color:var(--danger);border:none" onclick="hapusBpjs('${d.id}')">Hapus</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  const pg = document.getElementById('bpjs-pagination');
+  if (!pg) return;
+  const start = total === 0 ? 0 : (_bpPage-1)*_bpPerPage+1;
+  const end = Math.min(_bpPage*_bpPerPage, total);
+  pg.innerHTML = `
+    <span style="font-size:13px;color:var(--text-muted)">Menampilkan ${start}–${end} dari ${total} record</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" onclick="bpGoPage(${_bpPage-1})" ${_bpPage<=1?'disabled':''}>&#8249; Prev</button>
+      <span style="font-size:13px;padding:5px 10px;background:var(--bg);border-radius:var(--radius-sm)">Hal. ${_bpPage}/${totalPages}</span>
+      <button class="btn btn-outline btn-sm" onclick="bpGoPage(${_bpPage+1})" ${_bpPage>=totalPages?'disabled':''}>Next &#8250;</button>
+    </div>
+  `;
+}
+
+function bpGoPage(p) {
+  _bpPage = p;
+  renderBpjsList();
+}
+
+// ════════════════════════════════ BPJS – EXPORT: PILIH KOLOM ════════════════════════════════
+const EXPORT_BP_COLUMNS = [
+  { key: 'nama',          label: 'Nama Karyawan',          pdfW: 40, align: 'left',   get: d => d.nama || '-' },
+  { key: 'jabatan',       label: 'Jabatan',                pdfW: 32, align: 'left',   get: d => d.jabatan || '-' },
+  { key: 'departemen',    label: 'Departemen',             pdfW: 28, align: 'left',   get: d => d.departemen || '-' },
+  { key: 'bpjsKesehatan', label: 'No. BPJS Kesehatan',     pdfW: 34, align: 'left',   get: d => d.bpjsKesehatan || '-' },
+  { key: 'bpjsTK',        label: 'No. BPJS Ketenagakerjaan', pdfW: 34, align: 'left', get: d => d.bpjsTK || '-' },
+  { key: 'status',        label: 'Status Kepesertaan',     pdfW: 22, align: 'center', get: d => d.status || 'Aktif' },
+  { key: 'keterangan',    label: 'Keterangan',             pdfW: 30, align: 'left',   get: d => d.keterangan || '-' },
+];
+const EXPORT_BP_DEFAULT_KEYS = EXPORT_BP_COLUMNS.map(c => c.key);
+let _exportBpSelected = new Set(EXPORT_BP_DEFAULT_KEYS);
+
+function openExportBpjsModal() {
+  const data = getFilteredBpjs();
+  if (!data.length) { showToast('Tidak ada data untuk diekspor.', 'warn'); return; }
+  const list = document.getElementById('export-bp-col-list');
+  if (list) {
+    list.innerHTML = EXPORT_BP_COLUMNS.map(c => `
+      <label class="checkbox-inline">
+        <input type="checkbox" data-export-bp-col="${c.key}" ${_exportBpSelected.has(c.key) ? 'checked' : ''} onchange="toggleExportBpCol('${c.key}', this.checked)">
+        ${esc(c.label)}
+      </label>
+    `).join('');
+  }
+  openModal('modal-export-bpjs');
+}
+
+function toggleExportBpCol(key, checked) {
+  if (checked) _exportBpSelected.add(key);
+  else _exportBpSelected.delete(key);
+}
+
+function setAllExportBpjsCols(checked) {
+  _exportBpSelected = checked ? new Set(EXPORT_BP_DEFAULT_KEYS) : new Set();
+  document.querySelectorAll('#export-bp-col-list input[data-export-bp-col]').forEach(cb => { cb.checked = checked; });
+}
+
+function runExportBpjs(type) {
+  const selectedCols = EXPORT_BP_COLUMNS.filter(c => _exportBpSelected.has(c.key));
+  if (!selectedCols.length) { showToast('Pilih minimal satu kolom untuk diekspor.', 'warn'); return; }
+  closeModal('modal-export-bpjs');
+  if (type === 'pdf') exportBpjsPDF(selectedCols);
+  else exportBpjsExcel(selectedCols);
+}
+
+// ════════════════════════════════ BPJS – EXPORT PDF ════════════════════════════════
+// Desain identik dengan export PDF APD Ukuran / Karyawan: monokrom, judul rata kiri, garis grid tegas.
+function exportBpjsPDF(selectedCols) {
+  const all = getFilteredBpjs();
+  if (!all.length) { showToast('Tidak ada data untuk diekspor.', 'warn'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const PW = 297, PH = 210, M = 14;
+  let y = M;
+
+  const INK    = [30, 30, 30];
+  const MUTED  = [110,110,110];
+  const LINE   = [40, 40, 40];
+  const HEADBG = [235,235,235];
+
+  const ts = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tgl = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
+  const jam = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
+
+  function drawPageHeader() {
+    doc.setTextColor(...INK);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text('Data BPJS Karyawan', M, y);
+    y += 5.5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...MUTED);
+    doc.text('PO Blanket Manpower TPPI', M, y);
+    doc.text(`Dicetak ${tgl}, ${jam}  •  ${all.length} data`, PW - M, y, { align: 'right' });
+    y += 4;
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.4);
+    doc.line(M, y, PW - M, y);
+    y += 6;
+    doc.setTextColor(...INK);
+  }
+
+  function drawPageFooter(pageNum, totalPages) {
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.2);
+    doc.line(M, PH - 12, PW - M, PH - 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text('ProManage – APD Management System', M, PH - 8);
+    doc.text(`Halaman ${pageNum} dari ${totalPages}`, PW / 2, PH - 8, { align: 'center' });
+    doc.text('Dokumen internal', PW - M, PH - 8, { align: 'right' });
+  }
+
+  const PAGE_TABLE_W = PW - 2 * M;
+  const noColW = 9;
+  const rawDataW = selectedCols.reduce((s, c) => s + c.pdfW, 0);
+  const scale = (PAGE_TABLE_W - noColW) / rawDataW;
+  const cols = [
+    { label: 'No', w: noColW, align: 'center', key: null },
+    ...selectedCols.map(c => ({ label: c.label, w: c.pdfW * scale, align: c.align, key: c.key }))
+  ];
+  const TABLE_W = cols.reduce((s, c) => s + c.w, 0);
+  const ROW_H = 7.5;
+  const HDR_H = 9;
+
+  function drawTableHeader(startX) {
+    doc.setFillColor(...HEADBG);
+    doc.rect(startX, y, TABLE_W, HDR_H, 'F');
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.3);
+    doc.rect(startX, y, TABLE_W, HDR_H);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+    let cx = startX;
+    cols.forEach(c => {
+      doc.text(c.label, cx + c.w / 2, y + HDR_H / 2 + 1.4, { align: 'center' });
+      if (cx > startX) {
+        doc.setDrawColor(...LINE);
+        doc.setLineWidth(0.2);
+        doc.line(cx, y, cx, y + HDR_H);
+      }
+      cx += c.w;
+    });
+    y += HDR_H;
+  }
+
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const sortedAll = [...all].sort((a, b) => {
+    const da = a.departemen || 'Lainnya', db = b.departemen || 'Lainnya';
+    const ia = deptOrder.indexOf(da), ib = deptOrder.indexOf(db);
+    const ra = ia === -1 ? 99 : ia, rb = ib === -1 ? 99 : ib;
+    if (ra !== rb) return ra - rb;
+    return (a.nama||'').localeCompare(b.nama||'', 'id-ID');
+  });
+
+  let pageNum = 1;
+  const PAGE_BODY_BOTTOM = PH - 16;
+  drawPageHeader();
+  drawTableHeader(M);
+
+  sortedAll.forEach((d, idx) => {
+    if (y + ROW_H > PAGE_BODY_BOTTOM) {
+      doc.addPage();
+      pageNum++;
+      y = M;
+      drawPageHeader();
+      drawTableHeader(M);
+    }
+
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.15);
+    doc.line(M, y + ROW_H, M + TABLE_W, y + ROW_H);
+
+    const cells = [
+      { v: String(idx + 1), align: 'center' },
+      ...selectedCols.map(c => ({ v: c.get(d), align: c.align }))
+    ];
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+
+    let cx = M;
+    cells.forEach((cell, ci) => {
+      const cw = cols[ci].w;
+      const align = cell.align || cols[ci].align || 'left';
+      const maxW = cw - 3;
+      const txt = doc.splitTextToSize(String(cell.v), maxW)[0] || '';
+      const tx = align === 'center' ? cx + cw / 2 : (align === 'right' ? cx + cw - 2 : cx + 2);
+
+      if (ci > 0) {
+        doc.setDrawColor(...LINE);
+        doc.setLineWidth(0.12);
+        doc.line(cx, y, cx, y + ROW_H);
+      }
+
+      doc.text(txt, tx, y + ROW_H / 2 + 1.6, { align });
+      cx += cw;
+    });
+
+    y += ROW_H;
+  });
+
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.3);
+  doc.line(M, y, M + TABLE_W, y);
+
+  y += 7;
+  if (y > PAGE_BODY_BOTTOM) { doc.addPage(); pageNum++; y = M; }
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...INK);
+  doc.text(`Total: ${all.length} karyawan`, M, y);
+
+  const totalPg = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPg; i++) {
+    doc.setPage(i);
+    drawPageFooter(i, totalPg);
+  }
+
+  doc.save(`DATA_BPJS_KARYAWAN_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}.pdf`);
+  showToast('Export PDF berhasil diunduh!', 'success');
+}
+
+// ════════════════════════════════ BPJS – EXPORT EXCEL ════════════════════════════════
+// Desain identik dengan export Excel APD Ukuran / Karyawan: monokrom, header netral, garis grid tegas.
+async function exportBpjsExcel(selectedCols) {
+  if (typeof ExcelJS === 'undefined') {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  const all = getFilteredBpjs();
+  if (!all.length) { showToast('Tidak ada data untuk diekspor.', 'warn'); return; }
+
+  const ts = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tglStr = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
+  const jamStr = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
+
+  const BLACK  = 'FF1A1A1A';
+  const GREY60 = 'FF666666';
+  const HEADBG = 'FFE9E9E9';
+  const LINE   = 'FF999999';
+  const thinGrid = { style: 'thin', color: { argb: LINE } };
+  const fullBorder = { top: thinGrid, left: thinGrid, bottom: thinGrid, right: thinGrid };
+
+  const COL_W_MAP = {
+    nama: 26, jabatan: 22, departemen: 18, bpjsKesehatan: 22, bpjsTK: 24, status: 16, keterangan: 30,
+  };
+  const CENTER_KEYS = new Set(['status']);
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'ProManage – APD Management System';
+  wb.created = ts;
+
+  function buildSheet(ws, title, subtitle, rowsData, colsForSheet) {
+    const colCount = 1 + colsForSheet.length;
+    ws.columns = [6, ...colsForSheet.map(c => COL_W_MAP[c.key] || 16)].map(w => ({ width: w }));
+
+    ws.mergeCells(1, 1, 1, colCount);
+    const c1 = ws.getCell(1,1);
+    c1.value = title;
+    c1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: BLACK } };
+    c1.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(1).height = 22;
+
+    ws.mergeCells(2, 1, 2, colCount);
+    const c2 = ws.getCell(2,1);
+    c2.value = subtitle;
+    c2.font = { name: 'Calibri', size: 10, color: { argb: GREY60 } };
+    c2.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(2).height = 16;
+
+    ws.getRow(3).height = 6;
+
+    const headerRowIdx = 4;
+    const headers = ['No', ...colsForSheet.map(c => c.label)];
+    const headerRow = ws.getRow(headerRowIdx);
+    headers.forEach((h, i) => {
+      const cell = headerRow.getCell(i+1);
+      cell.value = h;
+      cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: BLACK } };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:HEADBG} };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = fullBorder;
+    });
+    headerRow.height = 20;
+    ws.views = [{ state: 'frozen', ySplit: headerRowIdx }];
+
+    rowsData.forEach((d, idx) => {
+      const r = ws.getRow(headerRowIdx + 1 + idx);
+      const vals = [idx+1, ...colsForSheet.map(c => (c.getExcel ? c.getExcel(d) : c.get(d)))];
+      vals.forEach((v, i) => { r.getCell(i+1).value = v; });
+      r.height = 17;
+      r.font = { name: 'Calibri', size: 10, color: { argb: BLACK } };
+
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      r.getCell(1).border = fullBorder;
+      colsForSheet.forEach((c, ci) => {
+        const cell = r.getCell(ci+2);
+        const align = CENTER_KEYS.has(c.key) ? 'center' : 'left';
+        cell.alignment = { vertical: 'middle', horizontal: align, indent: align === 'left' ? 1 : 0 };
+        cell.border = fullBorder;
+      });
+    });
+
+    const totalRowIdx = headerRowIdx + 1 + rowsData.length;
+    ws.mergeCells(totalRowIdx, 1, totalRowIdx, colCount);
+    const totalCell = ws.getCell(totalRowIdx, 1);
+    totalCell.value = `Total: ${rowsData.length} karyawan`;
+    totalCell.font = { name:'Calibri', size: 10, bold: true, color:{argb:BLACK} };
+    totalCell.alignment = { vertical:'middle', horizontal:'left', indent: 1 };
+    totalCell.border = { top: thinGrid };
+    ws.getRow(totalRowIdx).height = 18;
+
+    ws.autoFilter = { from: { row: headerRowIdx, column: 1 }, to: { row: headerRowIdx, column: colCount } };
+  }
+
+  // ── Sheet 1: Semua Data ──
+  const ws1 = wb.addWorksheet('Semua Data');
+  buildSheet(ws1, 'Data BPJS Karyawan', `PO Blanket Manpower TPPI  •  Dicetak ${tglStr}, ${jamStr}  •  ${all.length} data`, all, selectedCols);
+
+  // ── Sheet 2–N: per departemen ──
+  const colsNoDept = selectedCols.filter(c => c.key !== 'departemen');
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const grouped = {};
+  all.forEach(d => {
+    const dept = d.departemen || 'Lainnya';
+    if (!grouped[dept]) grouped[dept] = [];
+    grouped[dept].push(d);
+  });
+  const sortedDepts = [
+    ...deptOrder.filter(d => grouped[d]),
+    ...Object.keys(grouped).filter(d => !deptOrder.includes(d))
+  ];
+  sortedDepts.forEach(dept => {
+    const sheetName = (dept.length > 31 ? dept.substring(0,31) : dept);
+    const ws = wb.addWorksheet(sheetName);
+    buildSheet(ws, `Data BPJS — ${dept}`, `Dicetak ${tglStr}, ${jamStr}  •  ${grouped[dept].length} data`, grouped[dept], colsNoDept);
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `DATA_BPJS_KARYAWAN_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}.xlsx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
