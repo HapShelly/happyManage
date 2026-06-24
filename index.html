@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -6553,73 +6552,141 @@ function formatTanggalID(dateStr) {
 
 // ════════════════ EXPORT EXCEL (format sesuai template) ════════════════
 async function exportKaryawanExcel() {
-  // Dynamically load SheetJS
-  if (typeof XLSX === 'undefined') {
+  if (typeof ExcelJS === 'undefined') {
     await new Promise((res, rej) => {
       const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
       s.onload = res; s.onerror = rej;
       document.head.appendChild(s);
     });
   }
 
-  const all = db.karyawan || [];
+  const all = getFilteredKaryawan();
   if (!all.length) { showToast('Tidak ada data karyawan untuk diekspor.', 'warn'); return; }
-
-  const wb = XLSX.utils.book_new();
-
-  const depts = ['Maintenance','Project Execution','HSSE','Procurement'];
-  depts.forEach(dept => {
-    const deptData = all.filter(k => k.departemen === dept);
-    if (!deptData.length) return;
-
-    // Group by jabatan
-    const jabatanGroups = {};
-    deptData.forEach(k => {
-      const jab = (k.jabatan||'LAINNYA').toUpperCase();
-      if (!jabatanGroups[jab]) jabatanGroups[jab] = [];
-      jabatanGroups[jab].push(k);
-    });
-
-    const rows = [];
-    // Title
-    rows.push([`PO BLANKET MANPOWER TPPI ${dept.toUpperCase()}`, '', '', '', '', '', '', '', '', '']);
-    rows.push(['']);
-
-    let globalNo = 1;
-    Object.entries(jabatanGroups).forEach(([jab, karyawans]) => {
-     rows.push([jab.toUpperCase(), '', '', '', '', '', '', '', '', '']);
-     rows.push(['NO','NAMA','TEMPAT, TANGGAL LAHIR','ALAMAT','JENIS KELAMIN','AGAMA','NO. KTP','NO. HP','TANGGAL MASUK']);
-     karyawans.forEach((k, i) => {
-      const ttl = [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ');
-      rows.push([i+1, k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '']);
-     });
-      rows.push(['']);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-
-    // Styling: set column widths
-    ws['!cols'] = [
-      {wch:5}, {wch:28}, {wch:30}, {wch:55}, {wch:14}, {wch:10},
-      {wch:20}, {wch:16}, {wch:18}, {wch:12}, {wch:20}
-    ];
-
-    // Bold title rows (row 0)
-    const titleCell = ws['A1'];
-    if (titleCell) titleCell.s = { font: { bold: true, sz: 12 } };
-
-    XLSX.utils.book_append_sheet(wb, ws, dept.substring(0,31));
-  });
-
-  if (wb.SheetNames.length === 0) {
-    showToast('Tidak ada data karyawan per departemen.', 'warn'); return;
-  }
 
   const ts = new Date();
   const pad = n => String(n).padStart(2,'0');
-  const tsStr = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}`;
-  XLSX.writeFile(wb, `DATA_PEKERJA_PO_BLANKET_MANPOWER_${tsStr}.xlsx`);
+  const tglStr = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
+  const jamStr = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
+
+  // ── Palet monokrom — sama dengan export APD Ukuran ──
+  const BLACK  = 'FF1A1A1A';
+  const GREY60 = 'FF666666';
+  const HEADBG = 'FFE9E9E9';
+  const LINE   = 'FF999999';
+  const thinGrid = { style: 'thin', color: { argb: LINE } };
+  const fullBorder = { top: thinGrid, left: thinGrid, bottom: thinGrid, right: thinGrid };
+
+  const COLS = [
+    { label: 'Nama',                  w: 26, align: 'left',   get: k => k.nama || '-' },
+    { label: 'Tempat, Tanggal Lahir', w: 30, align: 'left',   get: k => [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ') || '-' },
+    { label: 'Alamat',                w: 50, align: 'left',   get: k => k.alamat || '-' },
+    { label: 'Jenis Kelamin',         w: 14, align: 'center', get: k => k.jk || '-' },
+    { label: 'Agama',                 w: 14, align: 'left',   get: k => k.agama || '-' },
+    { label: 'No. KTP',               w: 20, align: 'left',   get: k => k.ktp || '-' },
+    { label: 'No. HP',                w: 16, align: 'left',   get: k => k.hp || '-' },
+    { label: 'Tanggal Masuk',         w: 16, align: 'center', get: k => k.tglMasuk ? formatTanggalID(k.tglMasuk) : '-' },
+    { label: 'Status',                w: 12, align: 'center', get: k => k.status || 'Aktif' },
+  ];
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'ProManage – APD Management System';
+  wb.created = ts;
+
+  function buildSheet(ws, title, subtitle, rowsData) {
+    const colCount = 1 + COLS.length;
+    ws.columns = [6, ...COLS.map(c => c.w)].map(w => ({ width: w }));
+
+    ws.mergeCells(1, 1, 1, colCount);
+    const c1 = ws.getCell(1,1);
+    c1.value = title;
+    c1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: BLACK } };
+    c1.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(1).height = 22;
+
+    ws.mergeCells(2, 1, 2, colCount);
+    const c2 = ws.getCell(2,1);
+    c2.value = subtitle;
+    c2.font = { name: 'Calibri', size: 10, color: { argb: GREY60 } };
+    c2.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(2).height = 16;
+
+    ws.getRow(3).height = 6;
+
+    const headerRowIdx = 4;
+    const headers = ['No', ...COLS.map(c => c.label)];
+    const headerRow = ws.getRow(headerRowIdx);
+    headers.forEach((h, i) => {
+      const cell = headerRow.getCell(i+1);
+      cell.value = h;
+      cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: BLACK } };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:HEADBG} };
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.border = fullBorder;
+    });
+    headerRow.height = 20;
+    ws.views = [{ state: 'frozen', ySplit: headerRowIdx }];
+
+    rowsData.forEach((k, idx) => {
+      const r = ws.getRow(headerRowIdx + 1 + idx);
+      const vals = [idx+1, ...COLS.map(c => c.get(k))];
+      vals.forEach((v, i) => { r.getCell(i+1).value = v; });
+      r.height = 17;
+      r.font = { name: 'Calibri', size: 10, color: { argb: BLACK } };
+
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      r.getCell(1).border = fullBorder;
+      COLS.forEach((c, ci) => {
+        const cell = r.getCell(ci+2);
+        cell.alignment = { vertical: 'middle', horizontal: c.align, indent: c.align === 'left' ? 1 : 0 };
+        cell.border = fullBorder;
+      });
+    });
+
+    const totalRowIdx = headerRowIdx + 1 + rowsData.length;
+    ws.mergeCells(totalRowIdx, 1, totalRowIdx, colCount);
+    const totalCell = ws.getCell(totalRowIdx, 1);
+    totalCell.value = `Total: ${rowsData.length} karyawan`;
+    totalCell.font = { name:'Calibri', size: 10, bold: true, color:{argb:BLACK} };
+    totalCell.alignment = { vertical:'middle', horizontal:'left', indent: 1 };
+    totalCell.border = { top: thinGrid };
+    ws.getRow(totalRowIdx).height = 18;
+
+    ws.autoFilter = { from: { row: headerRowIdx, column: 1 }, to: { row: headerRowIdx, column: colCount } };
+  }
+
+  // ── Sheet 1: Semua Data ──
+  const ws1 = wb.addWorksheet('Semua Data');
+  buildSheet(ws1, 'Data Pekerja', `PO Blanket Manpower TPPI  •  Dicetak ${tglStr}, ${jamStr}  •  ${all.length} data`, all);
+
+  // ── Sheet 2–N: per departemen ──
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const grouped = {};
+  all.forEach(k => {
+    const dept = k.departemen || 'Lainnya';
+    if (!grouped[dept]) grouped[dept] = [];
+    grouped[dept].push(k);
+  });
+  const sortedDepts = [
+    ...deptOrder.filter(d => grouped[d]),
+    ...Object.keys(grouped).filter(d => !deptOrder.includes(d))
+  ];
+  sortedDepts.forEach(dept => {
+    const sheetName = (dept.length > 31 ? dept.substring(0,31) : dept);
+    const ws = wb.addWorksheet(sheetName);
+    buildSheet(ws, `Data Pekerja — ${dept}`, `Dicetak ${tglStr}, ${jamStr}  •  ${grouped[dept].length} data`, grouped[dept]);
+  });
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `DATA_KARYAWAN_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
   showToast('Export Excel berhasil diunduh!', 'success');
 }
 
@@ -6630,109 +6697,170 @@ function exportKaryawanPDF() {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const PAGE_W = 297, PAGE_H = 210;
-  const MARGIN = 14;
-  let y = MARGIN;
+  const PW = 297, PH = 210, M = 14;
+  let y = M;
 
-  const addTitle = () => {
-    doc.setFillColor(27, 43, 75);
-    doc.rect(0, 0, PAGE_W, 18, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11); doc.setFont('helvetica','bold');
-    doc.text('DATA PEKERJA PO BLANKET MANPOWER TPPI', PAGE_W/2, 11, {align:'center'});
-    doc.setFontSize(8); doc.setFont('helvetica','normal');
-    const ts = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-    doc.text(`Per: ${ts}`, PAGE_W - MARGIN, 11, {align:'right'});
-    doc.setTextColor(30, 30, 30);
-    y = 24;
-  };
+  // ── Palet monokrom: hitam untuk teks, satu abu gelap untuk garis/header ──
+  const INK    = [30, 30, 30];
+  const MUTED  = [110,110,110];
+  const LINE   = [40, 40, 40];
+  const HEADBG = [235,235,235];
 
-  addTitle();
+  const ts = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tgl = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
+  const jam = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
 
-  // Group by departemen then jabatan
-  const depts = [...new Set(all.map(k=>k.departemen).filter(Boolean))];
-  
-  depts.forEach(dept => {
-    const deptData = all.filter(k => k.departemen === dept);
-    if (!deptData.length) return;
-
-    // Dept header
-    if (y > PAGE_H - 30) { doc.addPage(); addTitle(); }
-    doc.setFillColor(74, 111, 165);
-    doc.rect(MARGIN, y, PAGE_W - 2*MARGIN, 7, 'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(9); doc.setFont('helvetica','bold');
-    doc.text(dept.toUpperCase(), MARGIN+3, y+5);
-    doc.setTextColor(30,30,30);
-    y += 10;
-
-    const jabatanGroups = {};
-    deptData.forEach(k => {
-      const jab = k.jabatan||'LAINNYA';
-      if (!jabatanGroups[jab]) jabatanGroups[jab] = [];
-      jabatanGroups[jab].push(k);
-    });
-
-    Object.entries(jabatanGroups).forEach(([jab, karyawans]) => {
-      if (y > PAGE_H - 20) { doc.addPage(); addTitle(); }
-      // Sub-header jabatan
-      doc.setFillColor(232, 244, 241);
-      doc.rect(MARGIN, y, PAGE_W - 2*MARGIN, 6, 'F');
-      doc.setFontSize(8); doc.setFont('helvetica','bold');
-      doc.setTextColor(27,43,75);
-      doc.text(jab.toUpperCase(), MARGIN+2, y+4);
-      doc.setTextColor(30,30,30);
-      y += 8;
-
-      // Table header
-      const cols = ['No','Nama','Tempat, Tgl Lahir','Alamat','JK','Agama','No. KTP','No. HP','Tgl Masuk','Status'];
-      const cw =  [10,  38,    38,                   70,     8,  14,    26,     22,    25,     16];
-      if (y > PAGE_H - 20) { doc.addPage(); addTitle(); }
-      doc.setFillColor(228,232,240);
-      doc.rect(MARGIN, y, PAGE_W-2*MARGIN, 6, 'F');
-      doc.setFontSize(7); doc.setFont('helvetica','bold');
-      let cx = MARGIN;
-      cols.forEach((c, i) => {
-        doc.text(c, cx+1, y+4.5);
-        cx += cw[i];
-      });
-      y += 7;
-
-      karyawans.forEach((k, idx) => {
-        if (y > PAGE_H - 10) { doc.addPage(); addTitle(); }
-        const rowH = 7;
-        if (idx % 2 === 0) {
-          doc.setFillColor(248,250,253);
-          doc.rect(MARGIN, y-1, PAGE_W-2*MARGIN, rowH, 'F');
-        }
-        doc.setFont('helvetica','normal'); doc.setFontSize(7);
-        cx = MARGIN;
-        const ttl = [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ');
-        const cells = [String(idx+1), k.nama||'', ttl, k.alamat||'', k.jk||'', k.agama||'', k.ktp||'', k.hp||'', k.tglMasuk ? formatTanggalID(k.tglMasuk) : '', k.status||'Aktif'];
-        cells.forEach((cell, i) => {
-          const maxW = cw[i] - 2;
-          const text = doc.splitTextToSize(String(cell), maxW)[0] || '';
-          doc.text(text, cx+1, y+4);
-          cx += cw[i];
-        });
-        y += rowH;
-      });
-      y += 4;
-    });
+  function drawPageHeader() {
+    doc.setTextColor(...INK);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(15);
+    doc.text('Data Pekerja', M, y);
+    y += 5.5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...MUTED);
+    doc.text('PO Blanket Manpower TPPI', M, y);
+    doc.text(`Dicetak ${tgl}, ${jam}  •  ${all.length} data`, PW - M, y, { align: 'right' });
     y += 4;
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.4);
+    doc.line(M, y, PW - M, y);
+    y += 6;
+    doc.setTextColor(...INK);
+  }
+
+  function drawPageFooter(pageNum, totalPages) {
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.2);
+    doc.line(M, PH - 12, PW - M, PH - 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...MUTED);
+    doc.text('ProManage – APD Management System', M, PH - 8);
+    doc.text(`Halaman ${pageNum} dari ${totalPages}`, PW / 2, PH - 8, { align: 'center' });
+    doc.text('Dokumen internal', PW - M, PH - 8, { align: 'right' });
+  }
+
+  // ── Kolom tabel ──
+  const PAGE_TABLE_W = PW - 2 * M;
+  const rawCols = [
+    { label: 'No',                  w: 8,  align: 'center', get: null },
+    { label: 'Nama',                w: 34, align: 'left',   get: k => k.nama || '-' },
+    { label: 'Tempat, Tgl Lahir',   w: 34, align: 'left',   get: k => [k.tempatLahir, k.tglLahir ? formatTanggalID(k.tglLahir) : ''].filter(Boolean).join(', ') || '-' },
+    { label: 'Alamat',              w: 58, align: 'left',   get: k => k.alamat || '-' },
+    { label: 'JK',                  w: 10, align: 'center', get: k => k.jk || '-' },
+    { label: 'Agama',               w: 16, align: 'left',   get: k => k.agama || '-' },
+    { label: 'No. KTP',             w: 24, align: 'left',   get: k => k.ktp || '-' },
+    { label: 'No. HP',              w: 22, align: 'left',   get: k => k.hp || '-' },
+    { label: 'Tgl Masuk',           w: 22, align: 'center', get: k => k.tglMasuk ? formatTanggalID(k.tglMasuk) : '-' },
+    { label: 'Status',              w: 18, align: 'center', get: k => k.status || 'Aktif' },
+  ];
+  const rawW = rawCols.reduce((s, c) => s + c.w, 0);
+  const scale = PAGE_TABLE_W / rawW;
+  const cols = rawCols.map(c => ({ ...c, w: c.w * scale }));
+  const TABLE_W = cols.reduce((s, c) => s + c.w, 0);
+  const ROW_H = 7.5;
+  const HDR_H = 9;
+
+  function drawTableHeader(startX) {
+    doc.setFillColor(...HEADBG);
+    doc.rect(startX, y, TABLE_W, HDR_H, 'F');
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.3);
+    doc.rect(startX, y, TABLE_W, HDR_H);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+    let cx = startX;
+    cols.forEach(c => {
+      doc.text(c.label, cx + c.w / 2, y + HDR_H / 2 + 1.4, { align: 'center' });
+      if (cx > startX) {
+        doc.setDrawColor(...LINE);
+        doc.setLineWidth(0.2);
+        doc.line(cx, y, cx, y + HDR_H);
+      }
+      cx += c.w;
+    });
+    y += HDR_H;
+  }
+
+  // Urutkan per departemen lalu jabatan secara senyap (tanpa header berwarna), supaya tetap rapi dikelompokkan
+  const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
+  const sortedAll = [...all].sort((a, b) => {
+    const da = a.departemen || 'Lainnya', db = b.departemen || 'Lainnya';
+    const ia = deptOrder.indexOf(da), ib = deptOrder.indexOf(db);
+    const ra = ia === -1 ? 99 : ia, rb = ib === -1 ? 99 : ib;
+    if (ra !== rb) return ra - rb;
+    const ja = (a.jabatan||''), jb = (b.jabatan||'');
+    if (ja !== jb) return ja.localeCompare(jb, 'id-ID');
+    return (a.nama||'').localeCompare(b.nama||'', 'id-ID');
   });
 
-  // Page numbers
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
+  let pageNum = 1;
+  const PAGE_BODY_BOTTOM = PH - 16;
+  drawPageHeader();
+  drawTableHeader(M);
+
+  sortedAll.forEach((k, idx) => {
+    if (y + ROW_H > PAGE_BODY_BOTTOM) {
+      doc.addPage();
+      pageNum++;
+      y = M;
+      drawPageHeader();
+      drawTableHeader(M);
+    }
+
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.15);
+    doc.line(M, y + ROW_H, M + TABLE_W, y + ROW_H);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+
+    let cx = M;
+    cols.forEach((c, ci) => {
+      const v = ci === 0 ? String(idx + 1) : c.get(k);
+      const align = c.align;
+      const maxW = c.w - 3;
+      const txt = doc.splitTextToSize(String(v), maxW)[0] || '';
+      const tx = align === 'center' ? cx + c.w / 2 : (align === 'right' ? cx + c.w - 2 : cx + 2);
+
+      if (ci > 0) {
+        doc.setDrawColor(...LINE);
+        doc.setLineWidth(0.12);
+        doc.line(cx, y, cx, y + ROW_H);
+      }
+
+      doc.text(txt, tx, y + ROW_H / 2 + 1.6, { align });
+      cx += c.w;
+    });
+
+    y += ROW_H;
+  });
+
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.3);
+  doc.line(M, y, M + TABLE_W, y);
+
+  y += 7;
+  if (y > PAGE_BODY_BOTTOM) { doc.addPage(); pageNum++; y = M; }
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...INK);
+  doc.text(`Total: ${all.length} karyawan`, M, y);
+
+  const totalPg = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPg; i++) {
     doc.setPage(i);
-    doc.setFontSize(7); doc.setTextColor(150,150,150);
-    doc.text(`Halaman ${i} dari ${pageCount}`, PAGE_W/2, PAGE_H-5, {align:'center'});
+    drawPageFooter(i, totalPg);
   }
 
   const ts2 = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  doc.save(`DATA_KARYAWAN_${ts2.getFullYear()}${pad(ts2.getMonth()+1)}${pad(ts2.getDate())}.pdf`);
+  const pad2 = n => String(n).padStart(2,'0');
+  doc.save(`DATA_KARYAWAN_${ts2.getFullYear()}${pad2(ts2.getMonth()+1)}${pad2(ts2.getDate())}.pdf`);
   showToast('Export PDF berhasil diunduh!', 'success');
 }
 
@@ -7136,272 +7264,165 @@ function exportApdUkuranPDF(selectedCols) {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const PW = 297, PH = 210, M = 12;
+  const PW = 297, PH = 210, M = 14;
   let y = M;
 
-  // ── Palette ──
-  const NAVY  = [27,  43,  75];
-  const STEEL = [74, 111, 165];
-  const MINT  = [232,244,241];
-  const GOLD  = [240,165,  0];
-  const WHITE = [255,255,255];
-  const LGRAY = [245,247,252];
-  const DGRAY = [100,110,130];
+  // ── Palet monokrom: hitam untuk teks, satu abu gelap untuk garis/header tabel ──
+  const INK    = [30, 30, 30];   // teks utama
+  const MUTED  = [110,110,110];  // teks sekunder (subjudul, footer)
+  const LINE   = [40, 40, 40];   // garis tabel & header
+  const HEADBG = [235,235,235];  // latar header tabel (abu sangat muda, netral)
 
   const ts = new Date();
   const pad = n => String(n).padStart(2,'0');
   const tgl = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
   const jam = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
 
-  // ══ Draw page header ══
-  function drawPageHeader() {
-    // Top gradient bar
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, PW, 22, 'F');
-
-    // Gold accent stripe
-    doc.setFillColor(...GOLD);
-    doc.rect(0, 22, PW, 2.5, 'F');
-
-    // Company / doc title (left)
-    doc.setTextColor(...WHITE);
+  // ══ Judul dokumen — rata kiri, sederhana, tanpa blok warna ══
+  function drawPageHeader(isFirstPage) {
+    doc.setTextColor(...INK);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text('DATA UKURAN APD KARYAWAN', M, 10);
+    doc.setFontSize(15);
+    doc.text('Data Ukuran APD Karyawan', M, y);
+    y += 5.5;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(200, 215, 240);
-    doc.text('PO Blanket Manpower TPPI', M, 16);
+    doc.setFontSize(9);
+    doc.setTextColor(...MUTED);
+    doc.text('PO Blanket Manpower TPPI', M, y);
+    doc.text(`Dicetak ${tgl}, ${jam}  •  ${all.length} data`, PW - M, y, { align: 'right' });
+    y += 4;
+    // garis tipis pemisah judul dari tabel
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.4);
+    doc.line(M, y, PW - M, y);
+    y += 6;
+    doc.setTextColor(...INK);
+  }
 
-    // Date / time (right)
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(...WHITE);
-    doc.text(`Dicetak: ${tgl}  ${jam}`, PW - M, 10, { align: 'right' });
+  // ══ Footer halaman — rata kiri/tengah/kanan, teks kecil netral ══
+  function drawPageFooter(pageNum, totalPages) {
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.2);
+    doc.line(M, PH - 12, PW - M, PH - 12);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
-    doc.setTextColor(200, 215, 240);
-    doc.text(`Total data: ${all.length} karyawan`, PW - M, 16, { align: 'right' });
-
-    doc.setTextColor(30, 30, 30);
-    y = 30;
+    doc.setTextColor(...MUTED);
+    doc.text('ProManage – APD Management System', M, PH - 8);
+    doc.text(`Halaman ${pageNum} dari ${totalPages}`, PW / 2, PH - 8, { align: 'center' });
+    doc.text('Dokumen internal', PW - M, PH - 8, { align: 'right' });
   }
 
-  // ══ Draw page footer ══
-  function drawPageFooter(pageNum, totalPages) {
-    doc.setFillColor(...GOLD);
-    doc.rect(0, PH - 8.4, PW, 0.4, 'F');
-    doc.setFillColor(...LGRAY);
-    doc.rect(0, PH - 8, PW, 8, 'F');
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...DGRAY);
-    doc.text('ProManage – APD Management System', M, PH - 3.5);
-    doc.text(`Halaman ${pageNum} dari ${totalPages}`, PW / 2, PH - 3.5, { align: 'center' });
-    doc.text(`Dokumen bersifat rahasia – hanya untuk keperluan internal`, PW - M, PH - 3.5, { align: 'right' });
-  }
-
-  // ══ Table column definitions (dinamis sesuai kolom yang dipilih user) ══
+  // ══ Definisi kolom tabel (dinamis sesuai kolom yang dipilih user) ══
   const PAGE_TABLE_W = PW - 2 * M;
   const noColW = 9;
   const rawDataW = selectedCols.reduce((s, c) => s + c.pdfW, 0);
   const scale = (PAGE_TABLE_W - noColW) / rawDataW; // skalakan agar total lebar selalu pas dengan halaman
   const cols = [
-    { label: 'No', w: noColW, align: 'center' },
-    ...selectedCols.map(c => ({ label: c.label.replace(' (pcs)', '\n(pcs)').replace(' ', '\n'), w: c.pdfW * scale, align: c.align }))
+    { label: 'No', w: noColW, align: 'center', key: null },
+    ...selectedCols.map(c => ({ label: c.label, w: c.pdfW * scale, align: c.align, key: c.key }))
   ];
   const TABLE_W = cols.reduce((s, c) => s + c.w, 0);
-  const ROW_H = 8;
-  const HDR_H = 12;
+  const ROW_H = 7.5;
+  const HDR_H = 9;
 
+  // Header tabel: satu baris, latar abu muda netral, garis penuh di sekitar & antar kolom
   function drawTableHeader(startX) {
-    // Header bg
-    doc.setFillColor(...NAVY);
+    doc.setFillColor(...HEADBG);
     doc.rect(startX, y, TABLE_W, HDR_H, 'F');
-    doc.setFillColor(...GOLD);
-    doc.rect(startX, y + HDR_H - 0.7, TABLE_W, 0.7, 'F');
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.3);
+    doc.rect(startX, y, TABLE_W, HDR_H);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6.5);
-    doc.setTextColor(...WHITE);
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
     let cx = startX;
     cols.forEach(c => {
-      const lines = c.label.split('\n');
-      const ly = lines.length === 2 ? y + 4 : y + 7;
-      if (lines.length === 2) {
-        doc.text(lines[0], cx + c.w / 2, ly,     { align: 'center' });
-        doc.text(lines[1], cx + c.w / 2, ly + 4, { align: 'center' });
-      } else {
-        doc.text(lines[0], cx + c.w / 2, ly, { align: 'center' });
-      }
-      // vertical divider
+      doc.text(c.label, cx + c.w / 2, y + HDR_H / 2 + 1.4, { align: 'center' });
       if (cx > startX) {
-        doc.setDrawColor(255,255,255);
+        doc.setDrawColor(...LINE);
         doc.setLineWidth(0.2);
         doc.line(cx, y, cx, y + HDR_H);
       }
       cx += c.w;
     });
-    doc.setDrawColor(255,255,255);
-    doc.setLineWidth(0.3);
-    doc.rect(startX, y, TABLE_W, HDR_H);
     y += HDR_H;
-    doc.setTextColor(30, 30, 30);
   }
 
-  // Group data by departemen
+  // Urutkan data per departemen secara senyap (tanpa header dept berwarna) — tetap rapi dikelompokkan
   const deptOrder = ['Maintenance','Project Execution','HSSE','Procurement'];
-  const grouped = {};
-  all.forEach(d => {
-    const dept = d.departemen || 'Lainnya';
-    if (!grouped[dept]) grouped[dept] = [];
-    grouped[dept].push(d);
+  const sortedAll = [...all].sort((a, b) => {
+    const da = a.departemen || 'Lainnya', db = b.departemen || 'Lainnya';
+    const ia = deptOrder.indexOf(da), ib = deptOrder.indexOf(db);
+    const ra = ia === -1 ? 99 : ia, rb = ib === -1 ? 99 : ib;
+    if (ra !== rb) return ra - rb;
+    return (a.nama||'').localeCompare(b.nama||'', 'id-ID');
   });
-  // Put known depts first, then others
-  const sortedDepts = [
-    ...deptOrder.filter(d => grouped[d]),
-    ...Object.keys(grouped).filter(d => !deptOrder.includes(d))
-  ];
-
-  // Initial draw
-  drawPageHeader();
 
   let pageNum = 1;
-  let globalNo = 0;
-  const PAGE_BODY_BOTTOM = PH - 12;
+  const PAGE_BODY_BOTTOM = PH - 16;
+  drawPageHeader(true);
+  drawTableHeader(M);
 
-  sortedDepts.forEach(dept => {
-    const rows = grouped[dept];
-
-    // Dept needs: dept header (8) + table header (HDR_H) + at least 1 row (ROW_H) + margin
-    if (y + 8 + HDR_H + ROW_H > PAGE_BODY_BOTTOM) {
-      drawPageFooter(pageNum, '?');
+  sortedAll.forEach((d, idx) => {
+    if (y + ROW_H > PAGE_BODY_BOTTOM) {
       doc.addPage();
       pageNum++;
-      drawPageHeader();
+      y = M;
+      drawPageHeader(false);
+      drawTableHeader(M);
     }
 
-    // ── Dept header ──
-    doc.setFillColor(...MINT);
-    doc.rect(M, y, TABLE_W, 8, 'F');
-    doc.setFillColor(...NAVY);
-    doc.rect(M, y, 2, 8, 'F');        // left accent block
-    doc.setDrawColor(...STEEL);
-    doc.setLineWidth(0.2);
-    doc.rect(M, y, TABLE_W, 8);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(...NAVY);
-    doc.text(`  ${dept.toUpperCase()}`, M + 5, y + 5.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(...STEEL);
-    doc.text(`${rows.length} karyawan`, M + TABLE_W - 3, y + 5.5, { align: 'right' });
-    y += 8;
+    // Garis horizontal bawah baris (tanpa fill warna — simpel, hanya garis)
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.15);
+    doc.line(M, y + ROW_H, M + TABLE_W, y + ROW_H);
 
-    drawTableHeader(M);
+    const cells = [
+      { v: String(idx + 1), align: 'center' },
+      ...selectedCols.map(c => ({ v: c.get(d), align: c.align }))
+    ];
 
-    rows.forEach((d, idx) => {
-      if (y + ROW_H > PAGE_BODY_BOTTOM) {
-        drawPageFooter(pageNum, '?');
-        doc.addPage();
-        pageNum++;
-        drawPageHeader();
-        drawTableHeader(M);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...INK);
+
+    let cx = M;
+    cells.forEach((cell, ci) => {
+      const cw = cols[ci].w;
+      const align = cell.align || cols[ci].align || 'left';
+      const maxW = cw - 3;
+      const txt = doc.splitTextToSize(String(cell.v), maxW)[0] || '';
+      const tx = align === 'center' ? cx + cw / 2 : (align === 'right' ? cx + cw - 2 : cx + 2);
+
+      // vertical divider antar kolom
+      if (ci > 0) {
+        doc.setDrawColor(...LINE);
+        doc.setLineWidth(0.12);
+        doc.line(cx, y, cx, y + ROW_H);
       }
 
-      globalNo++;
-      const even = idx % 2 === 0;
-      if (even) {
-        doc.setFillColor(...LGRAY);
-        doc.rect(M, y, TABLE_W, ROW_H, 'F');
-      } else {
-        doc.setFillColor(...WHITE);
-        doc.rect(M, y, TABLE_W, ROW_H, 'F');
-      }
-
-      // row border
-      doc.setDrawColor(228, 232, 240);
-      doc.setLineWidth(0.15);
-      doc.rect(M, y, TABLE_W, ROW_H);
-
-      const cells = [
-        { v: String(globalNo), align: 'center' },
-        ...selectedCols.map(c => ({ v: c.get(d), align: c.align }))
-      ];
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(30, 30, 30);
-
-      let cx = M;
-      cells.forEach((cell, ci) => {
-        const cw = cols[ci].w;
-        const align = cell.align || cols[ci].align || 'left';
-        const maxW = cw - 2.5;
-        const txt = doc.splitTextToSize(String(cell.v), maxW)[0] || '';
-        const tx = align === 'center' ? cx + cw / 2 : (align === 'right' ? cx + cw - 1.5 : cx + 1.5);
-
-        // ci=0 selalu kolom No; ci=1 (jika ada) mengikuti kolom pertama yang dipilih user
-        const colKey = ci === 0 ? null : selectedCols[ci - 1].key;
-        if (colKey === 'wpUkuran' && cell.v && cell.v !== '-') {
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(...NAVY);
-        } else if (ci === 0) {
-          doc.setTextColor(...DGRAY);
-        } else if (colKey === 'nama') {
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(27, 43, 75);
-        } else {
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(30, 30, 30);
-        }
-
-        // col divider
-        if (ci > 0) {
-          doc.setDrawColor(218, 225, 236);
-          doc.setLineWidth(0.12);
-          doc.line(cx, y, cx, y + ROW_H);
-        }
-
-        doc.text(txt, tx, y + ROW_H / 2 + 2, { align });
-        cx += cw;
-      });
-
-      y += ROW_H;
+      doc.text(txt, tx, y + ROW_H / 2 + 1.6, { align });
+      cx += cw;
     });
 
-    // subtotal row
-    doc.setFillColor(240, 244, 250);
-    doc.rect(M, y, TABLE_W, 6, 'F');
-    doc.setFont('helvetica', 'bolditalic');
-    doc.setFontSize(6.5);
-    doc.setTextColor(...STEEL);
-    doc.text(`  Subtotal ${dept}: ${rows.length} karyawan`, M + 2, y + 4);
-    y += 6;
-
-    y += 5; // dept separator
+    y += ROW_H;
   });
 
-  // ── Grand total ──
-  if (y + 10 > PAGE_BODY_BOTTOM) {
-    drawPageFooter(pageNum, '?');
-    doc.addPage();
-    pageNum++;
-    drawPageHeader();
-  }
-  doc.setFillColor(...GOLD);
-  doc.rect(M, y, TABLE_W, 0.8, 'F');
-  y += 0.8;
-  doc.setFillColor(...NAVY);
-  doc.rect(M, y, TABLE_W, 8, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(...WHITE);
-  doc.text(`TOTAL KESELURUHAN: ${all.length} KARYAWAN`, M + TABLE_W / 2, y + 5.5, { align: 'center' });
-  y += 8;
+  // garis penutup bawah tabel di halaman terakhir
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.3);
+  doc.line(M, y, M + TABLE_W, y);
 
-  // Fix footers now we know total pages
+  // ── Total keseluruhan — baris teks sederhana, rata kiri ──
+  y += 7;
+  if (y > PAGE_BODY_BOTTOM) { doc.addPage(); pageNum++; y = M; }
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...INK);
+  doc.text(`Total: ${all.length} karyawan`, M, y);
+
+  // Footer di semua halaman, sekarang totalnya sudah pasti
   const totalPg = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPg; i++) {
     doc.setPage(i);
@@ -7431,124 +7452,107 @@ async function exportApdUkuranExcel(selectedCols) {
   const tglStr = `${pad(ts.getDate())}/${pad(ts.getMonth()+1)}/${ts.getFullYear()}`;
   const jamStr = `${pad(ts.getHours())}:${pad(ts.getMinutes())}`;
 
-  // ── Palet warna (ARGB, dipakai ExcelJS) ──
-  const NAVY  = 'FF1B2B4B';
-  const STEEL = 'FF4A6FA5';
-  const GOLD  = 'FFF0A500';
-  const MINT  = 'FFE8F4F1';
-  const LGRAY = 'FFF5F7FC';
-  const WHITE = 'FFFFFFFF';
-  const DARK  = 'FF1A1F36';
+  // ── Palet monokrom: hitam untuk teks, satu abu untuk garis/header — tanpa warna-warni ──
+  const BLACK  = 'FF1A1A1A';
+  const GREY60 = 'FF666666';
+  const HEADBG = 'FFE9E9E9'; // latar header tabel, abu netral muda
+  const LINE   = 'FF999999'; // warna garis grid
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'ProManage – APD Management System';
   wb.created = ts;
 
-  // Lebar kolom default per key (dipetakan dari pdfW skala kasar ke karakter Excel)
+  // Lebar kolom per key (karakter Excel)
   const COL_W_MAP = {
     nama: 26, jabatan: 22, departemen: 18, wpUkuran: 12, wpWarna: 16, wpJatah: 13,
     atasanUkuran: 13, atasanWarna: 16, bawahanUkuran: 13, bawahanWarna: 16,
     sepatu: 13, helmWarna: 14, kaosUkuran: 12, keterangan: 30,
   };
+  // Kolom berisi kode/ukuran singkat → rata tengah. Kolom angka → rata kanan. Sisanya (teks) → rata kiri.
+  const CENTER_KEYS = new Set(['wpUkuran','atasanUkuran','bawahanUkuran','sepatu','kaosUkuran']);
+  const RIGHT_KEYS  = new Set(['wpJatah']);
+  const thinGrid = { style: 'thin', color: { argb: LINE } };
+  const fullBorder = { top: thinGrid, left: thinGrid, bottom: thinGrid, right: thinGrid };
 
   // buildSheet menerima daftar kolom (selectedCols, opsional minus 'departemen' untuk sheet per-departemen)
-  function buildSheet(ws, title, rowsData, colsForSheet) {
+  function buildSheet(ws, title, subtitle, rowsData, colsForSheet) {
     const colCount = 1 + colsForSheet.length; // +1 untuk kolom No
+    ws.columns = [6, ...colsForSheet.map(c => COL_W_MAP[c.key] || 16)].map(w => ({ width: w }));
 
-    // Kolom width
-    const widths = [6, ...colsForSheet.map(c => COL_W_MAP[c.key] || 16)];
-    ws.columns = widths.map(w => ({ width: w }));
-
-    // ── Banner judul ──
+    // ── Judul — teks polos rata kiri, tanpa blok warna ──
     ws.mergeCells(1, 1, 1, colCount);
     const c1 = ws.getCell(1,1);
     c1.value = title;
-    c1.font = { name: 'Calibri', size: 16, bold: true, color: { argb: WHITE } };
-    c1.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-    ws.getRow(1).height = 28;
-    for (let c = 1; c <= colCount; c++) ws.getCell(1,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:NAVY} };
+    c1.font = { name: 'Calibri', size: 14, bold: true, color: { argb: BLACK } };
+    c1.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(1).height = 22;
 
     ws.mergeCells(2, 1, 2, colCount);
     const c2 = ws.getCell(2,1);
-    c2.value = `PO Blanket Manpower TPPI   •   Dicetak: ${tglStr} ${jamStr}   •   Total: ${rowsData.length} karyawan`;
-    c2.font = { name: 'Calibri', size: 10, italic: true, color: { argb: WHITE } };
-    c2.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-    ws.getRow(2).height = 18;
-    for (let c = 1; c <= colCount; c++) ws.getCell(2,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF243761'} };
+    c2.value = subtitle;
+    c2.font = { name: 'Calibri', size: 10, color: { argb: GREY60 } };
+    c2.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(2).height = 16;
 
-    // Gold accent line row
-    ws.mergeCells(3, 1, 3, colCount);
-    for (let c = 1; c <= colCount; c++) ws.getCell(3,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:GOLD} };
-    ws.getRow(3).height = 3;
+    ws.getRow(3).height = 6; // baris kosong sebagai jarak sebelum tabel
 
-    // ── Header tabel ──
+    // ── Header tabel — satu warna netral, border tegas di semua sisi ──
     const headerRowIdx = 4;
     const headers = ['No', ...colsForSheet.map(c => c.label)];
     const headerRow = ws.getRow(headerRowIdx);
     headers.forEach((h, i) => {
       const cell = headerRow.getCell(i+1);
       cell.value = h;
-      cell.font = { name: 'Calibri', size: 10.5, bold: true, color: { argb: WHITE } };
-      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:STEEL} };
+      cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: BLACK } };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:HEADBG} };
       cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-      cell.border = { bottom: { style:'thin', color:{argb:NAVY} } };
+      cell.border = fullBorder;
     });
-    headerRow.height = 26;
+    headerRow.height = 20;
     ws.views = [{ state: 'frozen', ySplit: headerRowIdx }];
 
-    // Kolom yang dirata-tengah & getter Excel-spesifik (angka murni utk wpJatah, dsb)
-    const CENTER_KEYS = new Set(['wpUkuran','wpJatah','atasanUkuran','bawahanUkuran','sepatu','kaosUkuran']);
-
-    // ── Baris data ──
+    // ── Baris data — font & alignment konsisten, garis grid tegas, tanpa warna selang-seling ──
     rowsData.forEach((d, idx) => {
       const r = ws.getRow(headerRowIdx + 1 + idx);
       const vals = [idx+1, ...colsForSheet.map(c => (c.getExcel ? c.getExcel(d) : c.get(d)))];
       vals.forEach((v, i) => { r.getCell(i+1).value = v; });
-      r.height = 18;
-      r.font = { name: 'Calibri', size: 10, color: { argb: DARK } };
-      r.alignment = { vertical: 'middle' };
+      r.height = 17;
+      r.font = { name: 'Calibri', size: 10, color: { argb: BLACK } };
 
-      const fillColor = idx % 2 === 0 ? WHITE : LGRAY;
-      for (let c = 1; c <= colCount; c++) {
-        const cell = r.getCell(c);
-        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:fillColor} };
-        cell.border = { bottom: { style:'hair', color:{argb:'FFE4E8F0'} } };
-      }
-      // Center kolom No + kolom yang relevan (ukuran, jatah, dll)
-      r.getCell(1).alignment = { vertical:'middle', horizontal:'center' };
+      // No → tengah
+      r.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+      r.getCell(1).border = fullBorder;
       colsForSheet.forEach((c, ci) => {
-        if (CENTER_KEYS.has(c.key)) r.getCell(ci+2).alignment = { vertical:'middle', horizontal:'center' };
+        const cell = r.getCell(ci+2);
+        const align = RIGHT_KEYS.has(c.key) ? 'right' : (CENTER_KEYS.has(c.key) ? 'center' : 'left');
+        cell.alignment = { vertical: 'middle', horizontal: align, indent: align === 'left' ? 1 : 0 };
+        cell.border = fullBorder;
       });
-      // Bold nama (jika kolom nama disertakan)
-      const namaIdx = colsForSheet.findIndex(c => c.key === 'nama');
-      if (namaIdx > -1) r.getCell(namaIdx+2).font = { name:'Calibri', size: 10, bold: true, color:{argb:NAVY} };
-      // Highlight ukuran WP (jika disertakan)
-      const wpIdx = colsForSheet.findIndex(c => c.key === 'wpUkuran');
-      if (wpIdx > -1) r.getCell(wpIdx+2).font = { name:'Calibri', size: 10, bold: true, color:{argb:STEEL} };
     });
 
-    // ── Baris subtotal ──
-    const subtotalRowIdx = headerRowIdx + 1 + rowsData.length;
-    ws.mergeCells(subtotalRowIdx, 1, subtotalRowIdx, colCount);
-    const subCell = ws.getCell(subtotalRowIdx, 1);
-    subCell.value = `Subtotal: ${rowsData.length} karyawan`;
-    subCell.font = { name:'Calibri', size: 10, bold: true, italic: true, color:{argb:NAVY} };
-    subCell.alignment = { vertical:'middle', horizontal:'left', indent: 1 };
-    for (let c = 1; c <= colCount; c++) ws.getCell(subtotalRowIdx,c).fill = { type:'pattern', pattern:'solid', fgColor:{argb:MINT} };
-    ws.getRow(subtotalRowIdx).height = 20;
+    // ── Baris total — teks polos, tanpa warna blok ──
+    const totalRowIdx = headerRowIdx + 1 + rowsData.length;
+    ws.mergeCells(totalRowIdx, 1, totalRowIdx, colCount);
+    const totalCell = ws.getCell(totalRowIdx, 1);
+    totalCell.value = `Total: ${rowsData.length} karyawan`;
+    totalCell.font = { name:'Calibri', size: 10, bold: true, color:{argb:BLACK} };
+    totalCell.alignment = { vertical:'middle', horizontal:'left', indent: 1 };
+    totalCell.border = { top: thinGrid };
+    ws.getRow(totalRowIdx).height = 18;
 
     // AutoFilter pada header
     ws.autoFilter = { from: { row: headerRowIdx, column: 1 }, to: { row: headerRowIdx, column: colCount } };
-
-    // Outer border tipis di seluruh blok data
-    for (let c = 1; c <= colCount; c++) {
-      ws.getCell(headerRowIdx, c).border = { ...ws.getCell(headerRowIdx,c).border, top:{style:'medium',color:{argb:NAVY}} };
-    }
   }
 
-  // ── Sheet 1: Semua Data (pakai semua kolom yang dipilih user, termasuk Departemen jika dicentang) ──
-  const ws1 = wb.addWorksheet('Semua Data', { properties: { tabColor: { argb: NAVY } } });
-  buildSheet(ws1, 'DATA UKURAN APD KARYAWAN — SELURUH DEPARTEMEN', all, selectedCols);
+  // ── Sheet 1: Semua Data ──
+  const ws1 = wb.addWorksheet('Semua Data');
+  buildSheet(
+    ws1,
+    'Data Ukuran APD Karyawan',
+    `PO Blanket Manpower TPPI  •  Dicetak ${tglStr}, ${jamStr}  •  ${all.length} data`,
+    all,
+    selectedCols
+  );
 
   // ── Sheet 2–N: Per departemen (kolom Departemen dikeluarkan karena sudah jadi nama sheet) ──
   const colsNoDept = selectedCols.filter(c => c.key !== 'departemen');
@@ -7565,8 +7569,14 @@ async function exportApdUkuranExcel(selectedCols) {
   ];
   sortedDepts.forEach(dept => {
     const sheetName = (dept.length > 31 ? dept.substring(0,31) : dept);
-    const ws = wb.addWorksheet(sheetName, { properties: { tabColor: { argb: STEEL } } });
-    buildSheet(ws, `DATA UKURAN APD — ${dept.toUpperCase()}`, grouped[dept], colsNoDept);
+    const ws = wb.addWorksheet(sheetName);
+    buildSheet(
+      ws,
+      `Data Ukuran APD — ${dept}`,
+      `Dicetak ${tglStr}, ${jamStr}  •  ${grouped[dept].length} data`,
+      grouped[dept],
+      colsNoDept
+    );
   });
 
   const buf = await wb.xlsx.writeBuffer();
